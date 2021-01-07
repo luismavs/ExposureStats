@@ -1,0 +1,6 @@
+jupyter
+jupytext
+pandas
+seaborn
+xmltodict
+tqdm
