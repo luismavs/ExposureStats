@@ -22,6 +22,8 @@ import sys
 import seaborn as sns
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+from  matplotlib.ticker import FuncFormatter
+import ipywidgets as widgets
 
 
 # %%
@@ -32,8 +34,11 @@ FIELDS_TO_READ = {'CreateDate': '@xmp:CreateDate',
                   'Lens': '@alienexposure:lens',
                     }
 FILE_TYPE =  'exposurex6'
-PATH_IN_XML =  ['x:xmpmeta', 'rdf:RDF', 'rdf:Description']
+PATH_IN_XML = ['x:xmpmeta', 'rdf:RDF', 'rdf:Description']
+DIRS_TO_AVOID = ['recycling']
 
+
+# %%
 def read_one_image(file_path):
     
     with open(file_path, 'rb') as f:
@@ -52,8 +57,9 @@ def read_dir(path):
     imgs = []
     files_list = []
     for (dirpath, dirnames, filenames) in os.walk(path):
-        files = [Path(dirpath) / f for f in filenames if f.endswith(FILE_TYPE)]
-        files_list.extend(files)
+        if dirpath.split('/')[-1].lower() not in DIRS_TO_AVOID:
+            files = [Path(dirpath) / f for f in filenames if f.endswith(FILE_TYPE)]
+            files_list.extend(files)
         
     for f in tqdm(files_list):
         imgs.append(read_one_image(f))
@@ -93,15 +99,16 @@ def volume_plot(df, variable):
     plt.rcParams["axes.labelsize"] = 30
     
     vals = pd.Series(df[variable].unique()).sort_values(ascending=True)
-
-    #print(vals)
-    #sys.exit('here')
-    p = sns.catplot(x=variable, kind="count", 
+    p = sns.catplot(x=variable,
+                    kind="count", 
                 #palette="ch:.25",
                 data=df,
                 height=6, 
                 aspect=4,
-                   order=vals)
+                order=vals)
+    
+    #p.set_yticks(range(len(df))) # <--- set the ticks first
+    #p.set_xticklabels(['2011','2012','2013','2014','2015','2016','2017','2018'])
 
     _, xlabels = plt.xticks()
     _, ylabels = plt.yticks()
@@ -138,20 +145,57 @@ def lens(df, camera=None):
     return
 
 
-
 # %%
 path = '/Users/luis/Pictures/PhotosExp'
 print('path to get stats:', path)
 df = library_as_df(path)
 
-focal_lengths(df, camera='E-M5MarkIII')
+cameras = df['Camera'].unique().tolist()
+cameras = sorted(cameras)
+lenses = df['Lens'].unique().tolist()
+lenses = sorted(lenses)
 
-lens(df, camera='E-M5MarkIII')
-
-focal_lengths(df, camera='E-M5MarkIII', lens='OLYMPUS M.12-45mm F4.0')
 
 
 # %%
+w_camera = widgets.Select(
+    options=cameras,
+    rows=len(cameras),
+    description='Cameras:',
+    disabled=False
+)
+w_camera
+
+# %%
+lenses = lenses_in_camera = sorted(df.loc[df['Camera']==w_camera.value,'Lens'].unique().tolist())
+w_lens = widgets.Select(
+    options=lenses,
+    rows=len(lenses),
+    description='Lenses:',
+    disabled=False
+)
+w_lens
+
+# %%
+focal_lengths(df, camera=w_camera.value)
+
+lens(df, camera=w_camera.value)
+
+focal_lengths(df, camera=w_camera.value, lens=w_lens.value)
+
+
+# %%
+df['Lens'].unique().tolist()
+
+# %%
+widgets.Select(
+    options=df['Lens'].unique().tolist(),
+    #value='OSX',
+    rows=10,
+    description='Lens:',
+    disabled=False
+)
+
 
 # %%
 
