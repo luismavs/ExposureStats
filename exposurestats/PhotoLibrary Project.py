@@ -6,9 +6,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.9.1
+#       jupytext_version: 1.11.3
 #   kernelspec:
-#     display_name: Python 3
+#     display_name: Python 3 (ipykernel)
 #     language: python
 #     name: python3
 # ---
@@ -29,6 +29,8 @@ from datetime import datetime
 
 
 # %%
+##TO DO : remove unwanted photos
+
 FIELDS_TO_READ = {'CreateDate': '@xmp:CreateDate',
                  'FocalLength': '@exif:FocalLength',
                   'FNumber': '@exif:FNumber',
@@ -69,7 +71,7 @@ def read_one_image(file_path):
         
     except KeyError as e:
         print(f'key not in dict: {e}')
-        print(f'do and do some editing in Exposure to register this properly')
+        print(f'do some editing in Exposure to register this properly')
         print(file_path)
         print(f'\n')
 #        print(FIELDS_TO_READ)
@@ -203,7 +205,7 @@ def plot_by_date(df, lens='all'):
 
 
 # %%
-path = '/Users/luis/Pictures/PhotosExp'
+path = '/Users/luis/Pictures/Lisboa 2020-'
 print('path to get stats:', path)
 df = library_as_df(path)
 
