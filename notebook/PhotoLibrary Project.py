@@ -8,9 +8,9 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.11.3
 #   kernelspec:
-#     display_name: Python 3 (ipykernel)
+#     display_name: Python [conda env:py38]
 #     language: python
-#     name: python3
+#     name: conda-env-py38-py
 # ---
 
 # %%
@@ -217,6 +217,9 @@ lenses = sorted(lenses)
 
 
 # %%
+df.head(2)
+
+# %%
 w_camera = widgets.Select(
     options=cameras,
     rows=len(cameras),
@@ -245,10 +248,12 @@ focal_lengths(df, camera=w_camera.value, lens=w_lens.value)
 plot_by_date(df, lens=w_lens.value)
 
 
+# %%
+df['FocalLength'].max()
+
 # %% [markdown]
 # #### scratch space
 
 # %%
-df['Lens'].unique().tolist()
 
 # %%
