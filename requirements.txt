@@ -1,8 +1,9 @@
-jupyter
-jupytext
+#jupyter
+#jupytext
+#seaborn
 pandas
-seaborn
 xmltodict
 tqdm
 streamlit
 Altair
+pyyaml

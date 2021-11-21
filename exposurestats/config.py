@@ -1,22 +1,43 @@
-# %%
-##TO DO : remove unwanted photos
+from dataclasses import dataclass, field
+from typing import List, Dict, Union
+import yaml
+from pathlib import Path
 
-FIELDS_TO_READ = {'CreateDate': '@xmp:CreateDate',
-                 'FocalLength': '@exif:FocalLength',
-                  'FNumber': '@exif:FNumber',
-                  'Camera': '@tiff:Model',
-                  'Lens': '@alienexposure:lens',
-                  'Flag': '@alienexposure:pickflag'
-                    }
+##TODO : remove unwanted photos
 
-FIELDS_TO_PROCESS = {'Lens':'strip'}
 
-FILE_TYPE =  'exposurex6'
-PATH_IN_XML = ['x:xmpmeta', 'rdf:RDF', 'rdf:Description']
-DIRS_TO_AVOID = ['recycling']
+@dataclass
+class Config:
 
-#
-#FILTERS = {'remove__rejected' = {'alienexposure:pickflag' : 2}}
-DROP_FILTERS = {'Flag' : [2]}
+    DEFAULT_PATH: str
 
-DEFAULT_PATH = '/Users/luis/Pictures/Lisboa 2020-'
+    FIELDS_TO_READ: dict = field(
+        default_factory=lambda: {
+            "CreateDate": "@xmp:CreateDate",
+            "FocalLength": "@exif:FocalLength",
+            "FNumber": "@exif:FNumber",
+            "Camera": "@tiff:Model",
+            "Lens": "@alienexposure:lens",
+            "Flag": "@alienexposure:pickflag",
+        }
+    )
+
+    FIELDS_TO_PROCESS: dict = field(default_factory=lambda: {"Lens": "strip"})
+
+    FILE_TYPE: str = "exposurex6"
+    PATH_IN_XML: List[str] = field(default_factory=lambda: ["x:xmpmeta", "rdf:RDF", "rdf:Description"])
+    DIRS_TO_AVOID: List[str] = field(default_factory=lambda: ["recycling"])
+
+    # FILTERS = {'remove__rejected' = {'alienexposure:pickflag' : 2}}
+    DROP_FILTERS: Dict[str, list] = field(default_factory=lambda: {"Flag": [2]})
+
+    def __post_init__(self):
+        self.DEFAULT_PATH = Path(self.DEFAULT_PATH)
+
+
+def get_config(path_to_yaml: Union[Path, str]):
+
+    with open(path_to_yaml, "r") as f:
+        cfg = yaml.safe_load(f)
+
+    return Config(**cfg)

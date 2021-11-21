@@ -205,7 +205,7 @@ def plot_by_date(df, lens='all'):
 
 
 # %%
-path = '/Users/luis/Pictures/Lisboa 2020-'
+path = ...
 print('path to get stats:', path)
 df = library_as_df(path)
 
