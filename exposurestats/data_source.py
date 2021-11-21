@@ -23,20 +23,24 @@ def _read_one_image(cfg: Config, file_path: Path):
             if v == "strip":
                 d3[k] = str(d3[k]).strip()
 
-        image_name = file_path.name.replace(cfg.FILE_TYPE, "")[:-1]
+        for ft in cfg.FILE_TYPE:
+            if file_path.name.endswith(ft):
+                image_name = file_path.name.replace(ft, "")[:-1]
+
         d3["name"] = image_name
 
     except KeyError as e:
         logger.warning(f"key not in dict: {e}")
         logger.warning(f"do some editing in Exposure to register this properly")
         logger.warning(file_path)
-        #        print(FIELDS_TO_READ)
-        #        for k in d2.keys():
-        #            print(k,' :: ',d2[k])
         d3 = {}
 
     return d3
 
+
+def _file_has_extension(file:str, file_type_list:list) -> bool:
+
+    return any([file.endswith(ft) for ft in file_type_list])
 
 def _read_dir(cfg: Config):
 
@@ -45,7 +49,7 @@ def _read_dir(cfg: Config):
     files_list = []
     for (dirpath, dirnames, filenames) in os.walk(Path(cfg.DEFAULT_PATH)):
         if dirpath.split("/")[-1].lower() not in cfg.DIRS_TO_AVOID:
-            files = [Path(dirpath) / f for f in filenames if f.endswith(cfg.FILE_TYPE)]
+            files = [Path(dirpath) / f for f in filenames if _file_has_extension(f, cfg.FILE_TYPE)]
             files_list.extend(files)
 
     for f in tqdm(files_list):

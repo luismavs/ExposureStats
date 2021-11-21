@@ -24,7 +24,7 @@ class Config:
 
     FIELDS_TO_PROCESS: dict = field(default_factory=lambda: {"Lens": "strip"})
 
-    FILE_TYPE: str = "exposurex6"
+    FILE_TYPE: List[str] = field(default_factory=lambda: ["exposurex6", "exposurex7"])
     PATH_IN_XML: List[str] = field(default_factory=lambda: ["x:xmpmeta", "rdf:RDF", "rdf:Description"])
     DIRS_TO_AVOID: List[str] = field(default_factory=lambda: ["recycling"])
 
