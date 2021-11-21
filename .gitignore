@@ -1,4 +1,7 @@
 
+.vscode/
+config.yaml
+workspace.code-workspace
 *.ipynb
 .DS_Store
 
