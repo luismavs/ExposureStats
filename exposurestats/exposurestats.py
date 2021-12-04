@@ -27,7 +27,7 @@ def get_data(cfg: Config) -> Tuple[pd.DataFrame]:
     lenses = sorted(lenses)
     t2 = time()
 
-    logging.info(f"It took {round(t2-t1)}s to get the data")
+    logger.info(f"It took {round(t2-t1)}s to get the data")
 
     return df, cameras, lenses
 
@@ -112,7 +112,7 @@ def main():
 
     cfg = get_config("config.yaml")
 
-    logging.info(f"path to get stats: {cfg.DEFAULT_PATH}")
+    logger.info(f"path to get stats: {cfg.DEFAULT_PATH}")
 
     df, cameras, lenses = get_data(cfg)
 
@@ -147,5 +147,13 @@ def main():
 
 
 if __name__ == "__main__":
+
+    logger = logging.getLogger("exposurestats")  # package logger shared namespace
+    logger.setLevel(logging.DEBUG)  # set logger ouptut level
+    ch = logging.StreamHandler()  # get logger streamhandler if we want to format the output
+    ch.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))  # format output
+    # "%(levelname)s - %(message)s" # minimalist format
+    logger.addHandler(ch)  # attach formatting
+    logger.propagate = False  # avoids double logging if streamhandler was already attached to another logger elsewhere
 
     main()

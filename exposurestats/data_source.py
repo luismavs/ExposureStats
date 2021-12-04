@@ -38,9 +38,10 @@ def _read_one_image(cfg: Config, file_path: Path):
     return d3
 
 
-def _file_has_extension(file:str, file_type_list:list) -> bool:
+def _file_has_extension(file: str, file_type_list: list) -> bool:
 
     return any([file.endswith(ft) for ft in file_type_list])
+
 
 def _read_dir(cfg: Config):
 
