@@ -1,15 +1,21 @@
 # ExposureStats
 
-Streamlit App to show Exposure Image Editor Photo Stats.
+Streamlit App to display Exposure Image Editor Photo Stats.
 
 ## To install
 
-pip install -r requirements.txt
+Recommended python version is python3.10
 
-pip install -e .
+    pip install -r requirements.txt
 
-Recommended python version is python3.8
 
+To install as a local package
+
+    pip install -e .
+
+To install requirements for notebooks
+
+    sh install_nbs.sh
 
 ## Screenshot
 

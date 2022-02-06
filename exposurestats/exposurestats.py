@@ -14,22 +14,8 @@ logger = logging.getLogger("exposurestats")
 
 
 @st.cache
-def get_data(cfg: Config) -> Tuple[pd.DataFrame]:
-    t1 = time()
-
-    df = ds.library_as_df(cfg)
-    df["Lens"] = df["Lens"].fillna("No Lens")
-    df.loc[df["Lens"].str.len() == 0, "Lens"] = "No Lens"
-
-    cameras = df["Camera"].unique().tolist()
-    cameras = sorted(cameras)
-    lenses = df["Lens"].unique().tolist()
-    lenses = sorted(lenses)
-    t2 = time()
-
-    logger.info(f"It took {round(t2-t1)}s to get the data")
-
-    return df, cameras, lenses
+def get_data_with_cache(cfg: Config) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    return ds.get_data(cfg)
 
 
 def draw_count_by_lens(df: pd.DataFrame):
@@ -42,6 +28,33 @@ def draw_count_by_lens(df: pd.DataFrame):
         .mark_bar()
         .encode(
             y="Lens",
+            x=alt.X("name", title="Count", scale=alt.Scale(zero=True, domain=[0, df_["name"].max() * 1.05])),
+            color=alt.Color("name", legend=None),
+        )
+    )
+
+    text = chart.mark_text(
+        align="left",
+        baseline="middle",
+        # dx=1  # Nudges text to right so it doesn't appear on top of the bar
+    ).encode(text="name:Q")
+
+    chart = (chart + text).configure_axis(grid=False)
+
+    return chart
+
+
+def draw_count_by_keyword(df: pd.DataFrame):
+
+    df_ = pd.DataFrame(df.groupby("Keywords")["name"].count())
+    df_ = df_.reset_index()
+    df_ = df_.sort_values('name', ascending=False)
+
+    chart = (
+        alt.Chart(df_)
+        .mark_bar()
+        .encode(
+            y="Keywords",
             x=alt.X("name", title="Count", scale=alt.Scale(zero=True, domain=[0, df_["name"].max() * 1.05])),
             color=alt.Color("name", legend=None),
         )
@@ -114,7 +127,7 @@ def main():
 
     logger.info(f"path to get stats: {cfg.DEFAULT_PATH}")
 
-    df, cameras, lenses = get_data(cfg)
+    df, cameras, lenses, keywords = get_data_with_cache(cfg)
 
     d1 = st.sidebar.date_input("Start Date", datetime.date(2020, 1, 1))
     d2 = st.sidebar.date_input("End Date", datetime.datetime.today())
@@ -142,6 +155,9 @@ def main():
 
     chart3 = draw_count_by_date(df)
     st.altair_chart(chart3.interactive(bind_y=False).properties(width=600))
+
+    chart4 = draw_count_by_keyword(keywords)
+    st.altair_chart(chart4.interactive().properties(width=600))
 
     return
 

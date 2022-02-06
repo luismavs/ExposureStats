@@ -8,9 +8,9 @@ def _parse_requirements(file_path):
 setup(
     name="exposurestats",
     version="1.0.0",
-    description="Photo Statistics fo Exposure Image Editor",
+    description="Photo Statistics for Exposure Image Editor",
     classifiers=[
-        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.10",
     ],
     keywords="photography",
     url="https://github.com/luismavs/ExposureStats",
