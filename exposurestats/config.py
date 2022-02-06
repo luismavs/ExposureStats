@@ -19,6 +19,7 @@ class Config:
             "Camera": "@tiff:Model",
             "Lens": "@alienexposure:lens",
             "Flag": "@alienexposure:pickflag",
+            "Keywords": "alienexposure:virtualpaths",
         }
     )
 
@@ -33,6 +34,13 @@ class Config:
 
     def __post_init__(self):
         self.DEFAULT_PATH = Path(self.DEFAULT_PATH)
+
+    def __repr__(self) -> str:
+        str_ = ""
+        for attr_ in dir(self):
+            if attr_.startswith('_') is False:
+                str_ += f"{attr_}: {getattr(self, attr_)}\n"
+        return str_
 
 
 def get_config(path_to_yaml: Union[Path, str]):

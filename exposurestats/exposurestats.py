@@ -14,22 +14,8 @@ logger = logging.getLogger("exposurestats")
 
 
 @st.cache
-def get_data(cfg: Config) -> Tuple[pd.DataFrame]:
-    t1 = time()
-
-    df = ds.library_as_df(cfg)
-    df["Lens"] = df["Lens"].fillna("No Lens")
-    df.loc[df["Lens"].str.len() == 0, "Lens"] = "No Lens"
-
-    cameras = df["Camera"].unique().tolist()
-    cameras = sorted(cameras)
-    lenses = df["Lens"].unique().tolist()
-    lenses = sorted(lenses)
-    t2 = time()
-
-    logger.info(f"It took {round(t2-t1)}s to get the data")
-
-    return df, cameras, lenses
+def get_data(cfg:Config) -> Tuple[pd.DataFrame]:
+    return ds.get_data(cfg)
 
 
 def draw_count_by_lens(df: pd.DataFrame):

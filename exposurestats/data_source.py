@@ -5,8 +5,37 @@ from tqdm import tqdm
 import os
 from config import Config
 import logging
+from typing import Tuple, List
+from time import time
 
 logger = logging.getLogger("exposurestats")
+
+
+def get_data(cfg: Config) -> Tuple[pd.DataFrame]:
+    """[summary]
+
+    Args:
+        cfg (Config):
+
+    Returns:
+        Tuple[pd.DataFrame]: main_data, cameras, lenses
+    """
+
+    t1 = time()
+
+    df = library_as_df(cfg)
+    df["Lens"] = df["Lens"].fillna("No Lens")
+    df.loc[df["Lens"].str.len() == 0, "Lens"] = "No Lens"
+
+    cameras = df["Camera"].unique().tolist()
+    cameras = sorted(cameras)
+    lenses = df["Lens"].unique().tolist()
+    lenses = sorted(lenses)
+    t2 = time()
+
+    logger.info(f"It took {round(t2-t1)}s to get the data")
+
+    return df, cameras, lenses
 
 
 def _read_one_image(cfg: Config, file_path: Path):
@@ -27,6 +56,9 @@ def _read_one_image(cfg: Config, file_path: Path):
             if file_path.name.endswith(ft):
                 image_name = file_path.name.replace(ft, "")[:-1]
 
+        # some fields need extra processing
+        d3["Keywords"] = _extract_keywords(d3['Keywords'])
+
         d3["name"] = image_name
 
     except KeyError as e:
@@ -36,6 +68,34 @@ def _read_one_image(cfg: Config, file_path: Path):
         d3 = {}
 
     return d3
+
+
+def _extract_keywords(d_: dict) -> List[str]:
+    """extracts keywords from dict
+
+        improve the too generic exception
+
+    Args:
+        d_ (dict): data from extracted field
+
+    Returns:
+        List[str]: list of keywords
+    """
+
+    default_out = []
+    keywords = []
+    
+    try:
+        bag_ = d_.get("rdf:Bag", {}).get("rdf:li", [])
+    except AttributeError:
+        return default_out
+
+    for item in bag_:
+        if item.startswith("kywd"):
+            kw = item.replace("kywd:||", "").replace("|", "")
+            keywords.append(kw)
+
+    return keywords
 
 
 def _file_has_extension(file: str, file_type_list: list) -> bool:
