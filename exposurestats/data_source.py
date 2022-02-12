@@ -14,40 +14,19 @@ logger = logging.getLogger("exposurestats")
 class DataSource:
     """Interact with Exposure Data"""
 
-    def __init__(self, cfg:Config):
+    def __init__(self, cfg: Config):
 
         self.cfg = cfg
 
-    
-    def image_exception_handler(self, sidecar:dict, file_path:Path, missing_key:str) -> dict:
-        """handle execptions when reading image data
+        # monitoring
+        self.dangling_sidecars = 0
+        self.unloaded_sidecars = 0
 
-        Args:
-            cfg (Config): [description]
-            sidecar (dict): [description]
-            error (Any): [description]
+    def library_as_df(self):
 
-        Returns:
-            dict
-        """
+        df = self._read_dir()
 
-        logger.warning(f'Missing key: {missing_key}')
-        logger.warning(f"do some editing in Exposure to register this properly")
-        logger.warning(file_path)
-
-
-        # does the image file exist?
-
-        image_file = file_path.parents[2] / '.'.join(file_path.name.split('.')[0:-1])
-
-        # delete the sidecar if not
-        if os.path.exists(image_file) is False:
-            logger.warning('sidecar xmp has no matching image')
-
-        d3 = {}
-
-        return d3
-
+        return df
 
     def get_data(self) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         """[summary]
@@ -64,11 +43,11 @@ class DataSource:
 
         cameras = df["Camera"].unique().tolist()
         cameras = sorted(cameras)
-        
+
         lenses = df["Lens"].unique().tolist()
         lenses = sorted(lenses)
 
-        keywords = df[['name','Keywords']].explode('Keywords')
+        keywords = df[["name", "Keywords"]].explode("Keywords")
 
         t2 = time()
 
@@ -76,6 +55,67 @@ class DataSource:
 
         return df, cameras, lenses, keywords
 
+    def _image_exception_handler(self, sidecar: dict, file_path: Path, missing_key: str) -> dict:
+        """handle execptions when reading image data
+
+        Args:
+            cfg (Config): [description]
+            sidecar (dict): [description]
+            error (Any): [description]
+
+        Returns:
+            dict
+        """
+
+        e = ""
+
+        # delete the sidecar if the image does not exist
+        image_file = file_path.parents[2] / ".".join(file_path.name.split(".")[0:-1])
+
+        if os.path.exists(image_file) is False:
+            logger.warning("sidecar xmp has no matching image")
+            self.dangling_sidecars += 1
+            if self.cfg.delete_dangling_sidecars:
+                logger.warning("deleting dangling sidecar")
+                os.remove(file_path)
+                return {}
+
+        # files created by dxo pure raw + affinity photo have a different structure
+        if "CreateDate" in str(missing_key):
+            description = sidecar["x:xmpmeta"]["rdf:RDF"]["rdf:Description"]
+            try:
+                d3 = self._extract_data_from_sidecar(self.cfg.fields_to_read_alternative, description, file_path)
+                return d3
+
+            except KeyError as e:
+                logger.warning(f"Missing ke: {e}")
+                pass
+
+        # do not return anything
+        self.unloaded_sidecars += 1
+        logger.warning("Could not read data from sidecar")
+        logger.warning(f"Missing key: {missing_key}")
+        logger.warning(file_path)
+
+        return {}
+
+    def _extract_data_from_sidecar(self, parser: dict, sidecar: dict, file_path: Path):
+
+        d3 = {k: sidecar[v] for k, v in parser.items()}
+
+        for k, v in self.cfg.FIELDS_TO_PROCESS.items():
+            if v == "strip":
+                d3[k] = str(d3[k]).strip()
+
+        for ft in self.cfg.FILE_TYPE:
+            if file_path.name.endswith(ft):
+                image_name = file_path.name.replace(ft, "")[:-1]
+
+        # some fields need extra processing
+        d3["Keywords"] = self._extract_keywords(d3["Keywords"])
+        d3["name"] = image_name
+
+        return d3
 
     def _read_one_image(self, file_path: Path):
 
@@ -85,29 +125,11 @@ class DataSource:
         d2 = d1["x:xmpmeta"]["rdf:RDF"]["rdf:Description"]
 
         try:
-            d3 = {k: d2[v] for k, v in self.cfg.FIELDS_TO_READ.items()}
-
-            for k, v in self.cfg.FIELDS_TO_PROCESS.items():
-                if v == "strip":
-                    d3[k] = str(d3[k]).strip()
-
-            for ft in self.cfg.FILE_TYPE:
-                if file_path.name.endswith(ft):
-                    image_name = file_path.name.replace(ft, "")[:-1]
-
-            # some fields need extra processing
-            d3["Keywords"] = self._extract_keywords(d3['Keywords'])
-
-            d3["name"] = image_name
-
+            d3 = self._extract_data_from_sidecar(self.cfg.FIELDS_TO_READ, d2, file_path)
         except KeyError as e:
-            logger.warning(f"key not in dict: {e}")
-            
-            d3 = self.image_exception_handler(d1, file_path, e)
-
+            d3 = self._image_exception_handler(d1, file_path, e)
 
         return d3
-
 
     def _extract_keywords(self, d_: dict) -> List[str]:
         """extracts keywords from dict
@@ -123,7 +145,7 @@ class DataSource:
 
         default_out = []
         keywords = []
-        
+
         try:
             bag_ = d_.get("rdf:Bag", {}).get("rdf:li", [])
         except AttributeError:
@@ -136,11 +158,9 @@ class DataSource:
 
         return keywords
 
-
     def _file_has_extension(self, file: str, file_type_list: list) -> bool:
 
         return any([file.endswith(ft) for ft in file_type_list])
-
 
     def _read_dir(self):
 
@@ -157,8 +177,10 @@ class DataSource:
             if img != {}:
                 imgs.append(img)
 
-        # list of dicts to formatted df
+        # converted list of sidecar dicts to a formatted df
         df = pd.DataFrame(imgs)
+        df.info()
+        breakpoint()
 
         df["CreateDate"] = pd.to_datetime(df["CreateDate"])
         # df['FocalLength'] = df['FocalLength'].str.replace('/1', 'mm')
@@ -186,13 +208,8 @@ class DataSource:
         for k, v in self.cfg.DROP_FILTERS.items():
             df = df.loc[~df[k].isin(v), :]
 
-        logger.info(f"{len(df)} photos in library")
-
-        return df
-
-
-    def library_as_df(self):
-
-        df = self._read_dir()
+        logger.warning(f"{len(df)} photos in library")
+        logger.warning(f"{self.dangling_sidecars} dangling sidecar files found")
+        logger.warning(f"{self.unloaded_sidecars} unloaded sidecar files found")
 
         return df

@@ -44,6 +44,8 @@ ds = DataSource(cfg)
 df_ = ds.get_data()
 
 # %%
+ds.unloaded_sidecars
+
 
 # %%
 df_[0]['Keywords'].value_counts()

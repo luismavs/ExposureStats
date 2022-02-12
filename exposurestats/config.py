@@ -9,6 +9,9 @@ from pathlib import Path
 @dataclass
 class Config:
 
+
+    # data reading
+
     DEFAULT_PATH: str
 
     FIELDS_TO_READ: dict = field(
@@ -23,6 +26,19 @@ class Config:
         }
     )
 
+    fields_to_read_alternative: dict = field(
+        default_factory=lambda: {
+            "CreateDate": "@photoshop:DateCreated",
+            "FocalLength": "@exif:FocalLength",
+            "FNumber": "@exif:FNumber",
+            "Camera": "@tiff:Model",
+            "Lens": "@alienexposure:lens",
+            "Flag": "@alienexposure:pickflag",
+            "Keywords": "alienexposure:virtualpaths",
+        }
+    )
+
+
     FIELDS_TO_PROCESS: dict = field(default_factory=lambda: {"Lens": "strip"})
 
     FILE_TYPE: List[str] = field(default_factory=lambda: ["exposurex6", "exposurex7"])
@@ -31,6 +47,12 @@ class Config:
 
     # FILTERS = {'remove__rejected' = {'alienexposure:pickflag' : 2}}
     DROP_FILTERS: Dict[str, list] = field(default_factory=lambda: {"Flag": [2]})
+
+    # ------------------------------------------------------
+    # operational
+
+    delete_dangling_sidecars: bool = True
+
 
     def __post_init__(self):
         self.DEFAULT_PATH = Path(self.DEFAULT_PATH)
