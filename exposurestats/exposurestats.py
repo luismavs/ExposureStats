@@ -1,5 +1,4 @@
 import datetime
-from altair.vegalite.v4.schema.channels import Tooltip
 import streamlit as st
 import altair as alt
 import pandas as pd
@@ -7,15 +6,18 @@ from time import time
 import logging
 from typing import Tuple
 
-from config import get_config, Config
-import data_source as ds
+from exposurestats.config import get_config, Config
+from exposurestats.data_source import DataSource
 
 logger = logging.getLogger("exposurestats")
 
 
 @st.cache
 def get_data_with_cache(cfg: Config) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    return ds.get_data(cfg)
+
+    ds = DataSource(cfg)
+
+    return ds.get_data()
 
 
 def draw_count_by_lens(df: pd.DataFrame):

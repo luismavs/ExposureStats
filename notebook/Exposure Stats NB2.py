@@ -33,14 +33,17 @@ sys.path.append('/Users/luis/code/ExposureStats/exposurestats')
 
 # %%
 from config import get_config
-import data_source as ds
+from exposurestats.data_source import DataSource
 
 # %%
 cfg = get_config("../config.yaml")
 cfg
 
 # %%
-df_ = ds.get_data(cfg)
+ds = DataSource(cfg)
+df_ = ds.get_data()
+
+# %%
 
 # %%
 df_[0]['Keywords'].value_counts()
