@@ -6,11 +6,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.11.3
+#       jupytext_version: 1.13.6
 #   kernelspec:
-#     display_name: Python [conda env:py38]
+#     display_name: Python 3 (ipykernel)
 #     language: python
-#     name: conda-env-py38-py
+#     name: python3
 # ---
 
 # %%
@@ -51,7 +51,7 @@ DROP_FILTERS = {'Flag' : [2]}
 
 
 # %%
-def read_one_image(file_path):
+def _read_one_sidecar(file_path):
     
     with open(file_path, 'rb') as f:
         d1 = xmltodict.parse(f)
@@ -93,7 +93,7 @@ def read_dir(path):
             files_list.extend(files)
         
     for f in tqdm(files_list):
-        img = read_one_image(f)
+        img = _read_one_sidecar(f)
         if img != {}:
             imgs.append(img)
 

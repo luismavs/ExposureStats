@@ -1,0 +1,10 @@
+#jupyter
+#jupytext
+#seaborn
+pandas~=1.4
+xmltodict
+tqdm
+streamlit~=1.5
+altair~=4.2
+pyyaml
+watchdog
