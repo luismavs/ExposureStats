@@ -7,7 +7,7 @@ def _parse_requirements(file_path):
 
 setup(
     name="exposurestats",
-    version="1.0.0",
+    version="1.1.0",
     description="Photo Statistics for Exposure Image Editor",
     classifiers=[
         "Programming Language :: Python :: 3.10",
@@ -16,7 +16,7 @@ setup(
     url="https://github.com/luismavs/ExposureStats",
     author="Luís Seabra",
     author_email="luismavseabra@gmail.com",
-    install_requires=_parse_requirements("requirements.txt"),
+    install_requires=['pandas','xmltodict', 'altair', 'streamlit', 'pyyaml', 'watchdog', 'tqdm'],
     license="MIT",
     python_requires=">=3.8",
     zip_safe=False,
