@@ -14,11 +14,11 @@ logger = logging.getLogger("exposurestats")
 
 # @st.cache
 @st.experimental_memo
-def get_data_with_cache(_cfg: Config) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+def build_exposure_library_with_cache(_cfg: Config) -> Tuple[pd.DataFrame, list, list, pd.DataFrame]:
 
     ds = DataSource(_cfg)
 
-    return ds.get_data()
+    return ds.build_exposure_library()
 
 
 def draw_count_by_lens(df: pd.DataFrame):
@@ -134,7 +134,7 @@ def main():
     if st.sidebar.button("Reload"):
         st.experimental_memo.clear()
 
-    df, cameras, lenses, keywords = get_data_with_cache(cfg)
+    df, cameras, lenses, keywords = build_exposure_library_with_cache(cfg)
 
     d1 = st.sidebar.date_input("Start Date", datetime.date(2020, 1, 1))
     d2 = st.sidebar.date_input("End Date", datetime.datetime.today())
@@ -177,7 +177,7 @@ def main():
 
 # @st.cache
 @st.experimental_memo
-def get_data(counter):
+def build_exposure_library(counter):
 
     print("loading data", counter)
     dd = {"a": 2}

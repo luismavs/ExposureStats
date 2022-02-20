@@ -51,7 +51,7 @@ DROP_FILTERS = {'Flag' : [2]}
 
 
 # %%
-def read_one_sidecar(file_path):
+def _read_one_sidecar(file_path):
     
     with open(file_path, 'rb') as f:
         d1 = xmltodict.parse(f)
@@ -93,7 +93,7 @@ def read_dir(path):
             files_list.extend(files)
         
     for f in tqdm(files_list):
-        img = read_one_sidecar(f)
+        img = _read_one_sidecar(f)
         if img != {}:
             imgs.append(img)
 

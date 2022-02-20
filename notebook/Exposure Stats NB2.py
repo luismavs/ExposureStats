@@ -42,7 +42,7 @@ cfg
 
 # %%
 ds = DataSource(cfg)
-df, cameras, lenses, keywords = ds.get_data()
+df, cameras, lenses, keywords = ds.build_exposure_library()
 
 # %%
 keywords.info()

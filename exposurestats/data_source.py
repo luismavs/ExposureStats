@@ -7,6 +7,7 @@ from time import time
 import pandas as pd
 import xmltodict
 from exposurestats.config import Config
+from collections import Counter
 
 logger = logging.getLogger("exposurestats")
 
@@ -16,20 +17,19 @@ class DataSource:
 
     def __init__(self, cfg: Config):
 
+        # data
         self.cfg = cfg
+        self.exlib = pd.DataFrame
 
         # monitoring
         self.dangling_sidecars = 0
         self.unloaded_sidecars = 0
 
-    def library_as_df(self):
+    def build_exposure_library(self) -> Tuple[pd.DataFrame, List[str], List[str], pd.DataFrame]:
+        """Get exposure library together with auxilliary information
 
-        df = self._read_dir()
-
-        return df
-
-    def get_data(self) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-        """[summary]
+            Use the return methods to feed streamlit
+            Use the self attributes when doing interactive analysis
 
         Returns:
             Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]: main_data, cameras, lenses, keywords
@@ -37,7 +37,7 @@ class DataSource:
 
         t1 = time()
 
-        df = self.library_as_df()
+        df = self._read_dir()
         df["Lens"] = df["Lens"].fillna("No Lens")
         df.loc[df["Lens"].str.len() == 0, "Lens"] = "No Lens"
 
@@ -53,9 +53,68 @@ class DataSource:
 
         logger.info(f"It took {round(t2-t1)}s to get the data")
 
+        self.exlib = df
+
         return df, cameras, lenses, keywords
 
-    def read_one_sidecar(self, file_path: Path):
+    def _read_dir(self) -> pd.DataFrame:
+        """read a directory with sidecars as a dataframe"""
+
+        # recursively find all exposure files
+        sidecars = []
+        files_list = []
+        for (dirpath, dirnames, filenames) in os.walk(Path(self.cfg.DEFAULT_PATH)):
+            if dirpath.split("/")[-1].lower() not in self.cfg.DIRS_TO_AVOID:
+                files = [Path(dirpath) / f for f in filenames if self._file_has_extension(f, self.cfg.FILE_TYPE)]
+                files_list.extend(files)
+
+        self._deal_with_duplicates(files_list)
+
+        breakpoint()
+
+        for f in tqdm(files_list):
+            scar = self._read_one_sidecar(f)
+            if scar != {}:
+                sidecars.append(scar)
+
+        # converted list of sidecar dicts to a formatted df
+        df = pd.DataFrame(sidecars)
+        df.info()
+
+        df["CreateDate"] = pd.to_datetime(df["CreateDate"])
+        # df['FocalLength'] = df['FocalLength'].str.replace('/1', 'mm')
+        df["FocalLength"] = df["FocalLength"].apply(eval)
+        df["FocalLength"] = df["FocalLength"].round(0).astype(int)
+        # df['FocalLength'] = df['FocalLength'].astype(str) + 'mm'
+        df["FNumber"] = df["FNumber"].str.replace("/1", "").apply(eval)
+        df.loc[df["FNumber"] > 90, "FNumber"] = df.loc[df["FNumber"] > 90, "FNumber"] / 100.0
+        # probably for manual lens
+        df.loc[df["FNumber"] > 90, "FNumber"] = df.loc[df["FNumber"] > 90, "FNumber"] / 100.0
+
+        df["Flag"] = df["Flag"].astype(int)
+
+        df["Camera"] = df["Camera"].str.rstrip()
+        # df['CropFactor'] = 2
+        # df.loc[df['Camera'] == 'NIKON D3300', 'CropFactor'] = 1.5
+        df.loc[df["Camera"] == "OLYMPUS E-M5 MARK III", "CropFactor"] = 2
+        # df['FocalLength_'] = df['FocalLength'].str.replace('mm','').astype(float)
+        df["FocalLength_"] = df["FocalLength"]
+        df["EquivalentFocalLength"] = df["FocalLength_"].mul(df["CropFactor"])
+        df["EquivalentFocalLength"] = df["EquivalentFocalLength"].astype(str) + "mm"
+        df = df.drop(columns=["FocalLength_"])
+        df["Date"] = df["CreateDate"].dt.date
+
+        # filter df
+        for k, v in self.cfg.DROP_FILTERS.items():
+            df = df.loc[~df[k].isin(v), :]
+
+        logger.warning(f"{len(df)} photos in library")
+        logger.warning(f"{self.dangling_sidecars} dangling sidecar files found")
+        logger.warning(f"{self.unloaded_sidecars} unloaded sidecar files found")
+
+        return df
+
+    def _read_one_sidecar(self, file_path: Path):
 
         with open(file_path, "rb") as f:
             d1 = xmltodict.parse(f)
@@ -131,6 +190,28 @@ class DataSource:
 
         return d3
 
+    def _deal_with_duplicates(self, list_: List[Path]):
+
+        files = pd.DataFrame(
+            {
+                "full": list_,
+                "name": [f.name.removesuffix("exposurex6").removesuffix("exposurex7") for f in list_],
+                "suffix": [f.suffix for f in list_],
+            }
+        )
+
+        files_group = pd.DataFrame(files.groupby('name').size()).rename(columns={0:'Count'})
+
+        repeated_sidecars = files_group.loc[files_group['Count']>1,:].index.to_list()
+
+        files = files.merge(files_group, left_on='name',right_index=True)
+
+        print(len(repeated_sidecars))
+
+        breakpoint()
+
+        return list_
+
     def _extract_keywords(self, d_: dict) -> List[str]:
         """extracts keywords from dict
 
@@ -161,55 +242,3 @@ class DataSource:
     def _file_has_extension(self, file: str, file_type_list: list) -> bool:
 
         return any([file.endswith(ft) for ft in file_type_list])
-
-    def _read_dir(self):
-
-        # recursively find all exposure files
-        imgs = []
-        files_list = []
-        for (dirpath, dirnames, filenames) in os.walk(Path(self.cfg.DEFAULT_PATH)):
-            if dirpath.split("/")[-1].lower() not in self.cfg.DIRS_TO_AVOID:
-                files = [Path(dirpath) / f for f in filenames if self._file_has_extension(f, self.cfg.FILE_TYPE)]
-                files_list.extend(files)
-
-        for f in tqdm(files_list):
-            img = self.read_one_sidecar(f)
-            if img != {}:
-                imgs.append(img)
-
-        # converted list of sidecar dicts to a formatted df
-        df = pd.DataFrame(imgs)
-        df.info()
-
-        df["CreateDate"] = pd.to_datetime(df["CreateDate"])
-        # df['FocalLength'] = df['FocalLength'].str.replace('/1', 'mm')
-        df["FocalLength"] = df["FocalLength"].apply(eval)
-        df["FocalLength"] = df["FocalLength"].round(0).astype(int)
-        # df['FocalLength'] = df['FocalLength'].astype(str) + 'mm'
-        df["FNumber"] = df["FNumber"].str.replace("/1", "").apply(eval)
-        df.loc[df["FNumber"] > 90, "FNumber"] = df.loc[df["FNumber"] > 90, "FNumber"] / 100.0
-        # probably for manual lens
-        df.loc[df["FNumber"] > 90, "FNumber"] = df.loc[df["FNumber"] > 90, "FNumber"] / 100.0
-        
-        df["Flag"] = df["Flag"].astype(int)
-
-        df["Camera"] = df["Camera"].str.rstrip()
-        # df['CropFactor'] = 2
-        # df.loc[df['Camera'] == 'NIKON D3300', 'CropFactor'] = 1.5
-        df.loc[df["Camera"] == "OLYMPUS E-M5 MARK III", "CropFactor"] = 2
-        # df['FocalLength_'] = df['FocalLength'].str.replace('mm','').astype(float)
-        df["FocalLength_"] = df["FocalLength"]
-        df["EquivalentFocalLength"] = df["FocalLength_"].mul(df["CropFactor"])
-        df["EquivalentFocalLength"] = df["EquivalentFocalLength"].astype(str) + "mm"
-        df = df.drop(columns=["FocalLength_"])
-        df["Date"] = df["CreateDate"].dt.date
-
-        # filter df
-        for k, v in self.cfg.DROP_FILTERS.items():
-            df = df.loc[~df[k].isin(v), :]
-
-        logger.warning(f"{len(df)} photos in library")
-        logger.warning(f"{self.dangling_sidecars} dangling sidecar files found")
-        logger.warning(f"{self.unloaded_sidecars} unloaded sidecar files found")
-
-        return df
