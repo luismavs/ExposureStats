@@ -1,4 +1,5 @@
 from pathlib import Path
+from numpy import right_shift
 from tqdm import tqdm
 import os
 import logging
@@ -24,6 +25,9 @@ class DataSource:
         # monitoring
         self.dangling_sidecars = 0
         self.unloaded_sidecars = 0
+
+        # more internal configs
+        self.recognised_versions = ["exposurex6", "exposurex7"]
 
     def build_exposure_library(self) -> Tuple[pd.DataFrame, List[str], List[str], pd.DataFrame]:
         """Get exposure library together with auxilliary information
@@ -69,8 +73,6 @@ class DataSource:
                 files_list.extend(files)
 
         self._deal_with_duplicates(files_list)
-
-        breakpoint()
 
         for f in tqdm(files_list):
             scar = self._read_one_sidecar(f)
@@ -161,7 +163,7 @@ class DataSource:
                 return d3
 
             except KeyError as e:
-                logger.warning(f"Missing ke: {e}")
+                logger.warning(f"Missing key: {e}")
                 pass
 
         # do not return anything
@@ -192,6 +194,7 @@ class DataSource:
 
     def _deal_with_duplicates(self, list_: List[Path]):
 
+        # identify duplicated sidecars...
         files = pd.DataFrame(
             {
                 "full": list_,
@@ -199,16 +202,45 @@ class DataSource:
                 "suffix": [f.suffix for f in list_],
             }
         )
+        files_group = pd.DataFrame(files.groupby("name").size()).rename(columns={0: "Count"})
+        duplicated_sidecars = files_group.loc[files_group["Count"] > 1, :].index.to_list()
+        files = files.merge(files_group, left_on="name", right_index=True)
+        dupes = files.loc[files["Count"] > 1, :]
 
-        files_group = pd.DataFrame(files.groupby('name').size()).rename(columns={0:'Count'})
+        logger.warning(f"{len(duplicated_sidecars)} duplicated sidecars detected")
 
-        repeated_sidecars = files_group.loc[files_group['Count']>1,:].index.to_list()
+        # delete sidecars from old Exposure versions
+        ds = dupes.groupby("name")["suffix"].nunique()
+        dupe_versions = ds[ds > 1].index.tolist()
 
-        files = files.merge(files_group, left_on='name',right_index=True)
+        for dupe in dupe_versions[0:10]:
+            paths_to_delete = files.loc[
+                (files["name"] == dupe) & (~files["suffix"].str.contains(self.cfg.current_version, case=False)), "full"
+            ].tolist()
+            for path in paths_to_delete:
+                logger.warning(f"Removing duplicated sidecar from a previous exposure version: {path}")
+                os.remove(path)
 
-        print(len(repeated_sidecars))
+        if len(dupe_versions) > 0:
+            self._read_dir()
 
-        breakpoint()
+        # flag duplicated sidecars arising from duplicated files in different directories
+        if self.cfg.run_for_duplicates:
+            pd.set_option("display.max_colwidth", 200)
+            for dupe_ in duplicated_sidecars:
+                image_files = (
+                    files.loc[files["name"] == dupe_, "full"]
+                    .astype(str)
+                    .str.removesuffix("." + self.cfg.current_version)
+                ).rename('image_path')
+                image_files = image_files.apply(lambda x: Path(x).parents[2] / Path(x).name )
+
+                files_ = files.loc[files["name"] == dupe_, :].merge(image_files, left_index=True, right_index=True)
+                files_['image_exists'] = files_['image_path'].apply(lambda x : os.path.isfile(x))
+
+                for phantom_sidecar in files_.loc[files_['image_exists']==False, 'full'].tolist():
+                    logging.warning(f'removing sidecar {phantom_sidecar} without associated image file')
+                    os.remove(phantom_sidecar)
 
         return list_
 

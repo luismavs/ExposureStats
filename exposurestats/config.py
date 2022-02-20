@@ -14,6 +14,10 @@ class Config:
 
     DEFAULT_PATH: str
 
+    current_version: str = 'exposurex7'
+    # if True, issues a breakpoint when there appears to be duplicate image files
+    run_for_duplicates : bool = True 
+
     FIELDS_TO_READ: dict = field(
         default_factory=lambda: {
             "CreateDate": "@xmp:CreateDate",
