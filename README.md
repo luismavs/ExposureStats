@@ -30,13 +30,5 @@ Notebook folder has an older version, jupyter + seaborn based.
 
 ## To Do
 
-- Tests
-
 - Package/Deploy as a container?
-
-- Fix the  **key not in dict: '@alienexposure:lens'** error for some jpegs. This way they don't show up.
-
-- Exposure X7 support?
-
-- Bug when selected lens is empty
 
