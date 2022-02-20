@@ -232,14 +232,14 @@ class DataSource:
                     files.loc[files["name"] == dupe_, "full"]
                     .astype(str)
                     .str.removesuffix("." + self.cfg.current_version)
-                ).rename('image_path')
-                image_files = image_files.apply(lambda x: Path(x).parents[2] / Path(x).name )
+                ).rename("image_path")
+                image_files = image_files.apply(lambda x: Path(x).parents[2] / Path(x).name)
 
                 files_ = files.loc[files["name"] == dupe_, :].merge(image_files, left_index=True, right_index=True)
-                files_['image_exists'] = files_['image_path'].apply(lambda x : os.path.isfile(x))
+                files_["image_exists"] = files_["image_path"].apply(lambda x: os.path.isfile(x))
 
-                for phantom_sidecar in files_.loc[files_['image_exists']==False, 'full'].tolist():
-                    logging.warning(f'removing sidecar {phantom_sidecar} without associated image file')
+                for phantom_sidecar in files_.loc[files_["image_exists"] == False, "full"].tolist():
+                    logging.warning(f"removing sidecar {phantom_sidecar} without associated image file")
                     os.remove(phantom_sidecar)
 
         return list_
