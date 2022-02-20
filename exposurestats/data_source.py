@@ -47,13 +47,27 @@ class DataSource:
         lenses = df["Lens"].unique().tolist()
         lenses = sorted(lenses)
 
-        keywords = df[["name", "Keywords"]].explode("Keywords")
+        keywords = df[["name", "Camera", "Lens", "Keywords"]].explode("Keywords")
 
         t2 = time()
 
         logger.info(f"It took {round(t2-t1)}s to get the data")
 
         return df, cameras, lenses, keywords
+
+    def read_one_sidecar(self, file_path: Path):
+
+        with open(file_path, "rb") as f:
+            d1 = xmltodict.parse(f)
+
+        d2 = d1["x:xmpmeta"]["rdf:RDF"]["rdf:Description"]
+
+        try:
+            d3 = self._extract_data_from_sidecar(self.cfg.FIELDS_TO_READ, d2, file_path)
+        except KeyError as e:
+            d3 = self._image_exception_handler(d1, file_path, e)
+
+        return d3
 
     def _image_exception_handler(self, sidecar: dict, file_path: Path, missing_key: str) -> dict:
         """handle execptions when reading image data
@@ -117,20 +131,6 @@ class DataSource:
 
         return d3
 
-    def _read_one_image(self, file_path: Path):
-
-        with open(file_path, "rb") as f:
-            d1 = xmltodict.parse(f)
-
-        d2 = d1["x:xmpmeta"]["rdf:RDF"]["rdf:Description"]
-
-        try:
-            d3 = self._extract_data_from_sidecar(self.cfg.FIELDS_TO_READ, d2, file_path)
-        except KeyError as e:
-            d3 = self._image_exception_handler(d1, file_path, e)
-
-        return d3
-
     def _extract_keywords(self, d_: dict) -> List[str]:
         """extracts keywords from dict
 
@@ -173,14 +173,13 @@ class DataSource:
                 files_list.extend(files)
 
         for f in tqdm(files_list):
-            img = self._read_one_image(f)
+            img = self.read_one_sidecar(f)
             if img != {}:
                 imgs.append(img)
 
         # converted list of sidecar dicts to a formatted df
         df = pd.DataFrame(imgs)
         df.info()
-        breakpoint()
 
         df["CreateDate"] = pd.to_datetime(df["CreateDate"])
         # df['FocalLength'] = df['FocalLength'].str.replace('/1', 'mm')
@@ -191,6 +190,7 @@ class DataSource:
         df.loc[df["FNumber"] > 90, "FNumber"] = df.loc[df["FNumber"] > 90, "FNumber"] / 100.0
         # probably for manual lens
         df.loc[df["FNumber"] > 90, "FNumber"] = df.loc[df["FNumber"] > 90, "FNumber"] / 100.0
+        
         df["Flag"] = df["Flag"].astype(int)
 
         df["Camera"] = df["Camera"].str.rstrip()

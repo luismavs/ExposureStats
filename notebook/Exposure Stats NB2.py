@@ -13,6 +13,9 @@
 #     name: conda-env-py310-py
 # ---
 
+# %% [markdown]
+# # Interactive exploration notebook
+
 # %%
 import pandas as pd
 from pathlib import Path
@@ -28,32 +31,21 @@ from typing import List, Optional
 from datetime import datetime
 import sys
 
-# %%
 sys.path.append('/Users/luis/code/ExposureStats/exposurestats')
-
-# %%
 from config import get_config
 from exposurestats.data_source import DataSource
-
-# %%
 cfg = get_config("../config.yaml")
 cfg
 
+# %% [markdown]
+# ## load data
+
 # %%
 ds = DataSource(cfg)
-df_ = ds.get_data()
+df, cameras, lenses, keywords = ds.get_data()
 
 # %%
-ds.unloaded_sidecars
-
-
-# %%
-df_[0]['Keywords'].value_counts()
+keywords.info()
 
 # %%
-df_[0].info()
-
-# %%
-df_[0][['name','Keywords']].explode('Keywords')
-
-# %%
+keywords.loc[keywords['Keywords']]

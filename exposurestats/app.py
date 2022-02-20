@@ -12,10 +12,11 @@ from exposurestats.data_source import DataSource
 logger = logging.getLogger("exposurestats")
 
 
-@st.cache
-def get_data_with_cache(cfg: Config) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+# @st.cache
+@st.experimental_memo
+def get_data_with_cache(_cfg: Config) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
 
-    ds = DataSource(cfg)
+    ds = DataSource(_cfg)
 
     return ds.get_data()
 
@@ -50,13 +51,13 @@ def draw_count_by_keyword(df: pd.DataFrame):
 
     df_ = pd.DataFrame(df.groupby("Keywords")["name"].count())
     df_ = df_.reset_index()
-    df_ = df_.sort_values('name', ascending=False)
+    df_ = df_.sort_values("Keywords", ascending=True)
 
     chart = (
         alt.Chart(df_)
         .mark_bar()
         .encode(
-            y="Keywords",
+            y=alt.Y("Keywords", sort="-x"),
             x=alt.X("name", title="Count", scale=alt.Scale(zero=True, domain=[0, df_["name"].max() * 1.05])),
             color=alt.Color("name", legend=None),
         )
@@ -129,6 +130,10 @@ def main():
 
     logger.info(f"path to get stats: {cfg.DEFAULT_PATH}")
 
+    # button before function call to avoid missing the 1st rerun
+    if st.sidebar.button("Reload"):
+        st.experimental_memo.clear()
+
     df, cameras, lenses, keywords = get_data_with_cache(cfg)
 
     d1 = st.sidebar.date_input("Start Date", datetime.date(2020, 1, 1))
@@ -144,7 +149,7 @@ def main():
     else:
         selected_lenses = lenses_
 
-    # filter data frame according to widgets
+    # filter data according to widgets
     df = df.loc[df["Lens"].isin(selected_lenses), :]
     df = df.loc[df["Camera"].isin(selected_cameras), :]
     df = df.loc[(df["Date"] > d1) & (df["Date"] < d2), :]
@@ -158,10 +163,26 @@ def main():
     chart3 = draw_count_by_date(df)
     st.altair_chart(chart3.interactive(bind_y=False).properties(width=600))
 
-    chart4 = draw_count_by_keyword(keywords)
+    chart4 = draw_count_by_keyword(
+        keywords.loc[(keywords["Lens"].isin(selected_lenses)) & (keywords["Camera"].isin(selected_cameras)), :]
+    )
     st.altair_chart(chart4.interactive().properties(width=600))
 
+    # Streamlit widgets automatically run the script from top to bottom. Since
+    # this button is not connected to any other logic, it just causes a plain
+    # rerun.
+
     return
+
+
+# @st.cache
+@st.experimental_memo
+def get_data(counter):
+
+    print("loading data", counter)
+    dd = {"a": 2}
+
+    return dd
 
 
 if __name__ == "__main__":

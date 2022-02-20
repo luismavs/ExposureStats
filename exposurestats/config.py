@@ -69,5 +69,7 @@ def get_config(path_to_yaml: Union[Path, str]):
 
     with open(path_to_yaml, "r") as f:
         cfg = yaml.safe_load(f)
-
+    
+    del cfg['test_image'] 
+    
     return Config(**cfg)
