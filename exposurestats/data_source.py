@@ -161,16 +161,21 @@ class DataSource:
             try:
                 d3 = self._extract_data_from_sidecar(self.cfg.fields_to_read_alternative, description, file_path)
                 return d3
+            except KeyError as e:
+                logger.warning(f"Missing key: {e}")
+                pass
 
+            try:
+                d3 = self._extract_data_from_sidecar(self.cfg.fields_to_read_alternative_2, description, file_path)
+                return d3
             except KeyError as e:
                 logger.warning(f"Missing key: {e}")
                 pass
 
         # do not return anything
         self.unloaded_sidecars += 1
-        logger.warning("Could not read data from sidecar")
         logger.warning(f"Missing key: {missing_key}")
-        logger.warning(file_path)
+        logger.warning(f"Could not read data from sidecar: {file_path}")
 
         return {}
 
@@ -239,8 +244,11 @@ class DataSource:
                 files_["image_exists"] = files_["image_path"].apply(lambda x: os.path.isfile(x))
 
                 for phantom_sidecar in files_.loc[files_["image_exists"] == False, "full"].tolist():
-                    logging.warning(f"removing sidecar {phantom_sidecar} without associated image file")
-                    os.remove(phantom_sidecar)
+                    try:
+                        logging.warning(f"removing sidecar {phantom_sidecar} without associated image file")
+                        os.remove(phantom_sidecar)
+                    except FileNotFoundError:
+                        logging.warning("file not found, moving on.")
 
         return list_
 

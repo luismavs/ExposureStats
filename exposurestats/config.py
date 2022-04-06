@@ -41,6 +41,18 @@ class Config:
         }
     )
 
+    fields_to_read_alternative_2: dict = field(
+        default_factory=lambda: {
+            "CreateDate": "@alienexposure:capture_time",
+            "FocalLength": "@exif:FocalLength",
+            "FNumber": "@exif:FNumber",
+            "Camera": "@tiff:Model",
+            "Lens": "@alienexposure:lens",
+            "Flag": "@alienexposure:pickflag",
+            "Keywords": "alienexposure:virtualpaths",
+        }
+    )
+
     FIELDS_TO_PROCESS: dict = field(default_factory=lambda: {"Lens": "strip"})
 
     FILE_TYPE: List[str] = field(default_factory=lambda: ["exposurex6", "exposurex7"])
