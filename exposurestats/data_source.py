@@ -83,7 +83,7 @@ class DataSource:
         df = pd.DataFrame(sidecars)
         df.info()
 
-        df["CreateDate"] = pd.to_datetime(df["CreateDate"])
+        df["CreateDate"] = pd.to_datetime(df["CreateDate"], utc=True)
         # df['FocalLength'] = df['FocalLength'].str.replace('/1', 'mm')
         df["FocalLength"] = df["FocalLength"].apply(eval)
         df["FocalLength"] = df["FocalLength"].round(0).astype(int)
@@ -104,7 +104,11 @@ class DataSource:
         df["EquivalentFocalLength"] = df["FocalLength_"].mul(df["CropFactor"])
         df["EquivalentFocalLength"] = df["EquivalentFocalLength"].astype(str) + "mm"
         df = df.drop(columns=["FocalLength_"])
-        df["Date"] = df["CreateDate"].dt.date
+        try:
+            df["Date"] = df["CreateDate"].dt.date
+        except AttributeError as e:
+            logger.warning(e)
+            breakpoint()
 
         # filter df
         for k, v in self.cfg.DROP_FILTERS.items():
