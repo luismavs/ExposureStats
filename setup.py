@@ -7,7 +7,7 @@ def _parse_requirements(file_path):
 
 setup(
     name="exposurestats",
-    version="1.1.2",
+    version="1.1.3",
     description="Photo Statistics for Exposure Image Editor",
     classifiers=[
         "Programming Language :: Python :: 3.10",
