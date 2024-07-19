@@ -1,14 +1,15 @@
 #jupyter
 #jupytext
 #seaborn
-pandas~=1.4
+pandas #~=1.4
 xmltodict
 tqdm
-streamlit~=1.5
-altair~=4.2
-pyyaml
+streamlit #~=1.5
+altair #~=4.2
+pyyaml>=6.0.1
 watchdog
 
 #pip-audit
 mistune>=2.0.3
 notebook>=6.4.12
+loguru

@@ -77,12 +77,12 @@ class Config:
                 str_ += f"{attr_}: {getattr(self, attr_)}\n"
         return str_
 
+    @classmethod
+    def get_config(cls, path_to_yaml: Union[Path, str]):
 
-def get_config(path_to_yaml: Union[Path, str]):
+        with open(path_to_yaml, "r") as f:
+            cfg = yaml.safe_load(f)
 
-    with open(path_to_yaml, "r") as f:
-        cfg = yaml.safe_load(f)
+        del cfg["test_image"]
 
-    del cfg["test_image"]
-
-    return Config(**cfg)
+        return Config(**cfg)

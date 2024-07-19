@@ -25,16 +25,17 @@ import sys
 import seaborn as sns
 from tqdm import tqdm
 import matplotlib.pyplot as plt
-from  matplotlib.ticker import FuncFormatter
+from matplotlib.ticker import FuncFormatter
 import ipywidgets as widgets
 from typing import List, Optional
 from datetime import datetime
 import sys
 
-sys.path.append('/Users/luis/code/ExposureStats/exposurestats')
+sys.path.append("/Users/luis/code/ExposureStats/exposurestats")
 from config import get_config
 from exposurestats.data_source import DataSource
-cfg = get_config("../config.yaml")
+
+cfg = Config.get_config("../config.yaml")
 cfg
 
 # %% [markdown]
@@ -48,4 +49,4 @@ df, cameras, lenses, keywords = ds.build_exposure_library()
 keywords.info()
 
 # %%
-keywords.loc[keywords['Keywords']]
+keywords.loc[keywords["Keywords"]]

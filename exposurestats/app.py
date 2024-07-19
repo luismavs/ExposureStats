@@ -2,18 +2,15 @@ import datetime
 import streamlit as st
 import altair as alt
 import pandas as pd
-from time import time
-import logging
 from typing import Tuple
 
-from exposurestats.config import get_config, Config
+from exposurestats.config import Config
 from exposurestats.data_source import DataSource
-
-logger = logging.getLogger("exposurestats")
+from loguru import logger
 
 
 # @st.cache
-@st.experimental_memo
+@st.cache_data
 def build_exposure_library_with_cache(_cfg: Config) -> Tuple[pd.DataFrame, list, list, pd.DataFrame]:
 
     ds = DataSource(_cfg)
@@ -53,13 +50,15 @@ def draw_count_by_keyword(df: pd.DataFrame):
     df_ = df_.reset_index()
     df_ = df_.sort_values("Keywords", ascending=True)
 
+    print(df_)
+
     chart = (
         alt.Chart(df_)
         .mark_bar()
         .encode(
             y=alt.Y("Keywords", sort="-x"),
             x=alt.X("name", title="Count", scale=alt.Scale(zero=True, domain=[0, df_["name"].max() * 1.05])),
-            color=alt.Color("name", legend=None),
+            color=alt.Colowwwr("name", legend=None),
         )
     )
 
@@ -126,7 +125,7 @@ def main():
 
     st.title("Exposure Stats")
 
-    cfg = get_config("config.yaml")
+    cfg = Config.get_config("config.yaml")
 
     logger.info(f"path to get stats: {cfg.DEFAULT_PATH}")
 
@@ -143,7 +142,7 @@ def main():
 
     all_lenses = st.sidebar.checkbox("All lenses")
 
-    lenses_ = st.sidebar.multiselect("Select the Lens", options=lenses, default=lenses[0])
+    lenses_ = st.sidebar.multiselect("Select the Lens", options=lenses, default=lenses[1])
     if all_lenses:
         selected_lenses = lenses
     else:
@@ -163,36 +162,24 @@ def main():
     chart3 = draw_count_by_date(df)
     st.altair_chart(chart3.interactive(bind_y=False).properties(width=600))
 
-    chart4 = draw_count_by_keyword(
-        keywords.loc[(keywords["Lens"].isin(selected_lenses)) & (keywords["Camera"].isin(selected_cameras)), :]
-    )
-    st.altair_chart(chart4.interactive().properties(width=600))
+    df_kws = keywords.loc[
+        (keywords["Lens"].isin(selected_lenses))
+        & (keywords["Camera"].isin(selected_cameras))
+        & (keywords["Keywords"].notna()),
+        :,
+    ]
+
+    if len(df_kws) > 0:
+        chart4 = draw_count_by_keyword(df_kws)
+        st.altair_chart(chart4.interactive().properties(width=600))
+    else:
+        st.text("No keywords found for  camera/lens combination.")
 
     # Streamlit widgets automatically run the script from top to bottom. Since
     # this button is not connected to any other logic, it just causes a plain
     # rerun.
 
-    return
-
-
-# @st.cache
-@st.experimental_memo
-def build_exposure_library(counter):
-
-    print("loading data", counter)
-    dd = {"a": 2}
-
-    return dd
-
 
 if __name__ == "__main__":
-
-    logger = logging.getLogger("exposurestats")  # package logger shared namespace
-    logger.setLevel(logging.DEBUG)  # set logger ouptut level
-    ch = logging.StreamHandler()  # get logger streamhandler if we want to format the output
-    ch.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))  # format output
-    # "%(levelname)s - %(message)s" # minimalist format
-    logger.addHandler(ch)  # attach formatting
-    logger.propagate = False  # avoids double logging if streamhandler was already attached to another logger elsewhere
 
     main()

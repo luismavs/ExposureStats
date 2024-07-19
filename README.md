@@ -4,7 +4,7 @@ Streamlit App to display Exposure Image Editor Photo Stats.
 
 ## To install
 
-Recommended python version is python3.10
+Recommended python version is python3.12
 
     pip install -r requirements.txt
 
