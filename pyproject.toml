@@ -10,7 +10,7 @@ namespaces = false
 [project]
 # license = "MIT"
 name = "exposurestats"
-version = "1.2.0.alpha"
+version = "1.2.0"
 description = "Exposure Stats"
 authors = [{ name = "Luís Seabra", email = "luismvseabra@sgmail.com" }]
 requires-python = ">=3.12"
