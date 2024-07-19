@@ -1,16 +1,12 @@
 from pathlib import Path
-from numpy import right_shift
 from tqdm import tqdm
 import os
-import logging
-from typing import Tuple, List, Any
+from typing import Tuple, List
 from time import time
 import pandas as pd
 import xmltodict
 from exposurestats.config import Config
-from collections import Counter
-
-logger = logging.getLogger("exposurestats")
+from loguru import logger
 
 
 class DataSource:
@@ -36,7 +32,7 @@ class DataSource:
             Use the self attributes when doing interactive analysis
 
         Returns:
-            Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]: main_data, cameras, lenses, keywords
+            Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]: main_data df, cameras list, lenses list, keywords dataframe
         """
 
         t1 = time()
@@ -67,7 +63,7 @@ class DataSource:
         # recursively find all exposure files
         sidecars = []
         files_list = []
-        for (dirpath, dirnames, filenames) in os.walk(Path(self.cfg.DEFAULT_PATH)):
+        for dirpath, dirnames, filenames in os.walk(Path(self.cfg.DEFAULT_PATH)):
             if dirpath.split("/")[-1].lower() not in self.cfg.DIRS_TO_AVOID:
                 files = [Path(dirpath) / f for f in filenames if self._file_has_extension(f, self.cfg.FILE_TYPE)]
                 files_list.extend(files)
@@ -83,7 +79,7 @@ class DataSource:
         df = pd.DataFrame(sidecars)
         df.info()
 
-        df["CreateDate"] = pd.to_datetime(df["CreateDate"], utc=True)
+        df["CreateDate"] = pd.to_datetime(df["CreateDate"], utc=True, dayfirst=True, format="ISO8601")
         # df['FocalLength'] = df['FocalLength'].str.replace('/1', 'mm')
         df["FocalLength"] = df["FocalLength"].apply(eval)
         df["FocalLength"] = df["FocalLength"].round(0).astype(int)
@@ -286,3 +282,13 @@ class DataSource:
     def _file_has_extension(self, file: str, file_type_list: list) -> bool:
 
         return any([file.endswith(ft) for ft in file_type_list])
+
+
+if __name__ == "__main__":
+
+    ds = DataSource(cfg=Config.get_config("config.yaml"))
+
+    main_df, cameras, lenses, keywords = ds.build_exposure_library()
+
+    main_df.to_parquet("data/data.parquet")
+    keywords.to_parquet("data/keywords.parquet")
