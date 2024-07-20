@@ -2,16 +2,16 @@ import datetime
 import streamlit as st
 import altair as alt
 import pandas as pd
-from typing import Tuple
 
 from exposurestats.config import Config
 from exposurestats.data_source import DataSource
 from loguru import logger
+import sys
 
 
 # @st.cache
 @st.cache_data
-def build_exposure_library_with_cache(_cfg: Config) -> Tuple[pd.DataFrame, list, list, pd.DataFrame]:
+def build_exposure_library_with_cache(_cfg: Config) -> tuple[pd.DataFrame, list, list, pd.DataFrame]:
 
     ds = DataSource(_cfg)
 
@@ -58,7 +58,7 @@ def draw_count_by_keyword(df: pd.DataFrame):
         .encode(
             y=alt.Y("Keywords", sort="-x"),
             x=alt.X("name", title="Count", scale=alt.Scale(zero=True, domain=[0, df_["name"].max() * 1.05])),
-            color=alt.Colowwwr("name", legend=None),
+            color=alt.Color("name", legend=None),
         )
     )
 
@@ -131,7 +131,7 @@ def main():
 
     # button before function call to avoid missing the 1st rerun
     if st.sidebar.button("Reload"):
-        st.experimental_memo.clear()
+        st.cache_data.clear()
 
     df, cameras, lenses, keywords = build_exposure_library_with_cache(cfg)
 
@@ -182,4 +182,6 @@ def main():
 
 if __name__ == "__main__":
 
+    logger.remove()
+    logger.add(sys.stderr, level="SUCCESS")
     main()

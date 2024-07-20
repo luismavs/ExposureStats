@@ -25,14 +25,14 @@ class DataSource:
         # more internal configs
         self.recognised_versions = ["exposurex6", "exposurex7"]
 
-    def build_exposure_library(self) -> Tuple[pd.DataFrame, List[str], List[str], pd.DataFrame]:
+    def build_exposure_library(self) -> tuple[pd.DataFrame, list[str], list[str], pd.DataFrame]:
         """Get exposure library together with auxilliary information
 
             Use the return methods to feed streamlit
             Use the self attributes when doing interactive analysis
 
         Returns:
-            Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]: main_data df, cameras list, lenses list, keywords dataframe
+            main_data dataframe, cameras list, lenses list, keywords dataframe
         """
 
         t1 = time()
@@ -71,7 +71,7 @@ class DataSource:
         self._deal_with_duplicates(files_list)
 
         for f in tqdm(files_list):
-            scar = self._read_one_sidecar(f)
+            scar = self.read_one_sidecar(f)
             if scar != {}:
                 sidecars.append(scar)
 
@@ -116,7 +116,11 @@ class DataSource:
 
         return df
 
-    def _read_one_sidecar(self, file_path: Path):
+    def read_one_sidecar(self, file_path: Path | str) -> dict:
+        """Read properties from a sidecar .exposureXX file as a python dict"""
+
+        if isinstance(file_path, str):
+            return self.read_one_sidecar(Path(file_path))
 
         with open(file_path, "rb") as f:
             d1 = xmltodict.parse(f)
@@ -197,7 +201,7 @@ class DataSource:
 
         return d3
 
-    def _deal_with_duplicates(self, list_: List[Path]):
+    def _deal_with_duplicates(self, list_: list[Path]):
 
         # identify duplicated sidecars...
         files = pd.DataFrame(
@@ -245,14 +249,14 @@ class DataSource:
 
                 for phantom_sidecar in files_.loc[files_["image_exists"] == False, "full"].tolist():
                     try:
-                        logging.warning(f"removing sidecar {phantom_sidecar} without associated image file")
+                        logger.warning(f"removing sidecar {phantom_sidecar} without associated image file")
                         os.remove(phantom_sidecar)
                     except FileNotFoundError:
-                        logging.warning("file not found, moving on.")
+                        logger.warning("file not found, moving on.")
 
         return list_
 
-    def _extract_keywords(self, d_: dict) -> List[str]:
+    def _extract_keywords(self, d_: dict) -> list[str]:
         """extracts keywords from dict
 
             improve the too generic exception
@@ -261,21 +265,30 @@ class DataSource:
             d_ (dict): data from extracted field
 
         Returns:
-            List[str]: list of keywords
+            list[str]: list of keywords
         """
 
         default_out = []
         keywords = []
 
+        logger.trace(f"extracting keywords from {d_}")
+
         try:
-            bag_ = d_.get("rdf:Bag", {}).get("rdf:li", [])
+            bag_: list[str] = d_.get("rdf:Bag", {}).get("rdf:li", [])
         except AttributeError:
+            logger.trace(f"attribute error")
             return default_out
 
+        if isinstance(bag_, str):
+            bag_ = [bag_]
+
         for item in bag_:
+            logger.trace(item)
             if item.startswith("kywd"):
                 kw = item.replace("kywd:||", "").replace("|", "")
                 keywords.append(kw)
+
+        logger.trace(f"extracted keywords: {keywords}")
 
         return keywords
 
@@ -283,12 +296,16 @@ class DataSource:
 
         return any([file.endswith(ft) for ft in file_type_list])
 
+    @classmethod
+    def from_yaml(cls, path=str):
+        cfg = Config.get_config(path)
+        return cls(cfg)
+
 
 if __name__ == "__main__":
 
     ds = DataSource(cfg=Config.get_config("config.yaml"))
 
     main_df, cameras, lenses, keywords = ds.build_exposure_library()
-
-    main_df.to_parquet("data/data.parquet")
-    keywords.to_parquet("data/keywords.parquet")
+    main_df.to_csv("data/data.csv")
+    keywords.to_csv("data/keywords.csv")
