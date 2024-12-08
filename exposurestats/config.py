@@ -57,7 +57,7 @@ class Config:
 
     FILE_TYPE: list[str] = field(default_factory=lambda: ["exposurex6", "exposurex7"])
     PATH_IN_XML: list[str] = field(default_factory=lambda: ["x:xmpmeta", "rdf:RDF", "rdf:Description"])
-    DIRS_TO_AVOID: list[str] = field(default_factory=lambda: ["recycling"])
+    DIRS_TO_AVOID: list[str] = field(default_factory=lambda: ["recycling", "incoming"])
 
     # FILTERS = {'remove__rejected' = {'alienexposure:pickflag' : 2}}
     DROP_FILTERS: dict[str, list] = field(default_factory=lambda: {"Flag": [2]})

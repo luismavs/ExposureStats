@@ -64,9 +64,13 @@ class DataSource:
         sidecars = []
         files_list = []
         for dirpath, dirnames, filenames in os.walk(Path(self.cfg.DEFAULT_PATH)):
-            if dirpath.split("/")[-1].lower() not in self.cfg.DIRS_TO_AVOID:
-                files = [Path(dirpath) / f for f in filenames if self._file_has_extension(f, self.cfg.FILE_TYPE)]
-                files_list.extend(files)
+            print(dirpath.split("/")[-1].lower())
+            for dir_ in self.cfg.DIRS_TO_AVOID:
+                if dir_ in dirpath.split("/"):
+                    logger.warning(f"skipping dir to avoid detected {dir_}")
+                else:
+                    files = [Path(dirpath) / f for f in filenames if self._file_has_extension(f, self.cfg.FILE_TYPE)]
+                    files_list.extend(files)
 
         self._deal_with_duplicates(files_list)
 
@@ -79,7 +83,16 @@ class DataSource:
         df = pd.DataFrame(sidecars)
         df.info()
 
-        df["CreateDate"] = pd.to_datetime(df["CreateDate"], utc=True, dayfirst=True, format="ISO8601")
+        # detecting bad dates by coercing to Nat
+        df["CreateDate"] = pd.to_datetime(df["CreateDate"], utc=True, dayfirst=True, format="ISO8601", errors="coerce")
+        bad_dates = df.loc[df["CreateDate"].isna(), :]
+
+        if len(bad_dates) > 0:
+            logger.error("Sidecars with bad CreateDate found")
+            logger.error(bad_dates)
+            logger.error("ignoring them")
+            df = df.loc[df["CreateDate"].notna(), :]
+
         # df['FocalLength'] = df['FocalLength'].str.replace('/1', 'mm')
         df["FocalLength"] = df["FocalLength"].apply(eval)
         df["FocalLength"] = df["FocalLength"].round(0).astype(int)
@@ -113,6 +126,8 @@ class DataSource:
         logger.warning(f"{len(df)} photos in library")
         logger.warning(f"{self.dangling_sidecars} dangling sidecar files found")
         logger.warning(f"{self.unloaded_sidecars} unloaded sidecar files found")
+
+        logger.warning("incoming and recycling dirs avoided")
 
         return df
 

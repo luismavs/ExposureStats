@@ -17,6 +17,10 @@ To install requirements for notebooks
 
     sh install_nbs.sh
 
+## To Run
+
+    streamlit run exposurestats/app.py
+
 ## Screenshot
 
 ![plot](./data/screenshot.png)

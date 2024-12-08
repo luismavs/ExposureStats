@@ -8,6 +8,7 @@ streamlit #~=1.5
 altair #~=4.2
 pyyaml>=6.0.1
 watchdog
+typer
 
 #pip-audit
 mistune>=2.0.3
