@@ -50,8 +50,6 @@ def draw_count_by_keyword(df: pd.DataFrame):
     df_ = df_.reset_index()
     df_ = df_.sort_values("Keywords", ascending=True)
 
-    print(df_)
-
     chart = (
         alt.Chart(df_)
         .mark_bar()
