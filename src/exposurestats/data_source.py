@@ -11,12 +11,19 @@ from exposurestats.config import Config
 
 
 class DataSource:
-    """Interact with Exposure Data"""
-
     def __init__(self, cfg: Config):
-        # data
+        """Read an Exposure Library with sidecar files into an useful in-memory structure
+
+            May perform cleaning on the filesystem, such as removing duplicates and dangling sidecars!
+
+        Args:
+            cfg: Configuration object
+        """
+
+        # configuration
         self.cfg = cfg
-        self.exlib = pd.DataFrame
+        # the library as a dataframe
+        self.exlib: pd.DataFrame
 
         # monitoring
         self.dangling_sidecars = 0
@@ -59,8 +66,37 @@ class DataSource:
 
         return df, cameras, lenses, keywords
 
+    def read_one_sidecar(self, file_path: Path | str) -> dict:
+        """Read properties from a sidecar .exposureXX file as a python dict
+
+        Args:
+            file_path: path to the sidecar in the filesystem
+
+        Returns:
+            Sidecar dict
+        """
+
+        if isinstance(file_path, str):
+            file_path = Path(file_path)
+
+        with open(file_path, "rb") as f:
+            d1 = xmltodict.parse(f)
+
+        d2 = d1["x:xmpmeta"]["rdf:RDF"]["rdf:Description"]
+
+        try:
+            d3 = self._extract_data_from_sidecar(self.cfg.FIELDS_TO_READ, d2, file_path)
+        except KeyError as e:
+            d3 = self._image_exception_handler(d1, file_path, e)
+
+        return d3
+
     def _read_dir(self) -> pd.DataFrame:
-        """read a directory with sidecars as a dataframe"""
+        """ "Read the directory recursively
+
+        Returns:
+            pandas dataframe with the directory information
+        """
 
         # recursively find all exposure files
         sidecars = []
@@ -80,14 +116,33 @@ class DataSource:
 
         for f in tqdm(files_list):
             scar = self.read_one_sidecar(f)
-            if scar != {}:
+            if scar:
                 sidecars.append(scar)
 
-        # converted list of sidecar dicts to a formatted df
+        df = self._sidecars_to_dataframe(sidecars)
+
+        logger.warning(f"{len(df)} photos in library")
+        logger.warning(f"{self.dangling_sidecars} dangling sidecar files found")
+        logger.warning(f"{self.unloaded_sidecars} unloaded sidecar files found")
+
+        logger.warning("incoming and recycling dirs avoided")
+
+        return df
+
+    def _sidecars_to_dataframe(self, sidecars: list[dict]) -> pd.DataFrame:
+        """Convert list of sidecar dicts to a formatted df
+
+        Args:
+            sidecars:
+
+        Returns:
+            dataframe
+        """
+
         df = pd.DataFrame(sidecars)
         df.info()
 
-        # detecting bad dates by coercing to Nat
+        # detect bad dates by coercing to Nat
         df["CreateDate"] = pd.to_datetime(df["CreateDate"], utc=True, dayfirst=True, format="ISO8601", errors="coerce")
         bad_dates = df.loc[df["CreateDate"].isna(), :]
 
@@ -127,42 +182,20 @@ class DataSource:
         for k, v in self.cfg.DROP_FILTERS.items():
             df = df.loc[~df[k].isin(v), :]
 
-        logger.warning(f"{len(df)} photos in library")
-        logger.warning(f"{self.dangling_sidecars} dangling sidecar files found")
-        logger.warning(f"{self.unloaded_sidecars} unloaded sidecar files found")
-
-        logger.warning("incoming and recycling dirs avoided")
-
         return df
 
-    def read_one_sidecar(self, file_path: Path | str) -> dict:
-        """Read properties from a sidecar .exposureXX file as a python dict"""
-
-        if isinstance(file_path, str):
-            file_path = self.read_one_sidecar(Path(file_path))
-
-        with open(file_path, "rb") as f:
-            d1 = xmltodict.parse(f)
-
-        d2 = d1["x:xmpmeta"]["rdf:RDF"]["rdf:Description"]
-
-        try:
-            d3 = self._extract_data_from_sidecar(self.cfg.FIELDS_TO_READ, d2, file_path)
-        except KeyError as e:
-            d3 = self._image_exception_handler(d1, file_path, e)
-
-        return d3
-
     def _image_exception_handler(self, sidecar: dict, file_path: Path, missing_key: str) -> dict:
-        """handle execptions when reading image data
+        """Extract data from sidecar, while handling exceptions when reading image data
+
+        Can modify the file system
 
         Args:
-            cfg (Config): [description]
-            sidecar (dict): [description]
-            error (Any): [description]
+            sidecar: loaded sidecar data
+            file_path: path to sidecar in filesystem
+            missing_key: missing key in sidecar
 
         Returns:
-            dict
+            Extracted sidecar data, if any
         """
 
         e = ""
@@ -195,14 +228,26 @@ class DataSource:
                 logger.warning(f"Missing key: {e}")
                 pass
 
+            logger.warning(f"Missing key: {missing_key}")
+
         # do not return anything
         self.unloaded_sidecars += 1
-        logger.warning(f"Missing key: {missing_key}")
         logger.warning(f"Could not read data from sidecar: {file_path}")
 
         return {}
 
-    def _extract_data_from_sidecar(self, parser: dict, sidecar: dict, file_path: Path):
+    def _extract_data_from_sidecar(self, parser: dict, sidecar: dict, file_path: Path) -> dict:
+        """Extract data from raw sidecar dict
+
+        Args:
+            parser: parsing instructions
+            sidecar: sidecar raw dict
+            file_path: path to sidecar in filesystem
+
+        Returns:
+            extracted sidecar data
+        """
+
         d3 = {k: sidecar[v] for k, v in parser.items()}
 
         for k, v in self.cfg.FIELDS_TO_PROCESS.items():
@@ -219,13 +264,22 @@ class DataSource:
 
         return d3
 
-    def _deal_with_duplicates(self, list_: list[Path]):
+    def _deal_with_duplicates(self, sidecars: list[Path]):
+        """Process for duplicates
+
+        Removes duplicates from the filesystem
+
+        Args:
+            sidecars: list of sidecar paths
+
+        """
+
         # identify duplicated sidecars...
         files = pd.DataFrame(
             {
-                "full": list_,
-                "name": [f.name.removesuffix("exposurex6").removesuffix("exposurex7") for f in list_],
-                "suffix": [f.suffix for f in list_],
+                "full": sidecars,
+                "name": [f.name.removesuffix("exposurex6").removesuffix("exposurex7") for f in sidecars],
+                "suffix": [f.suffix for f in sidecars],
             }
         )
         files_group = pd.DataFrame(files.groupby("name").size()).rename(columns={0: "Count"})
@@ -273,18 +327,16 @@ class DataSource:
                     except FileNotFoundError:
                         logger.warning("file not found, moving on.")
 
-        return list_
-
     def _extract_keywords(self, d_: dict) -> list[str]:
-        """extracts keywords from dict
+        """Extract keywords from dict
 
-            improve the too generic exception
+            TODO: improve the too generic exception
 
         Args:
-            d_ (dict): data from extracted field
+            d_: data from extracted field
 
         Returns:
-            list[str]: list of keywords
+            list of extracted keywords
         """
 
         default_out = []
@@ -321,8 +373,7 @@ class DataSource:
 
 
 if __name__ == "__main__":
-    ds = DataSource(cfg=Config.from_yaml("config.yaml"))
-
+    ds = DataSource(cfg=Config.from_env())
     main_df, cameras, lenses, keywords = ds.build_exposure_library()
     main_df.to_csv("data/data.csv")
     keywords.to_csv("data/keywords.csv")
