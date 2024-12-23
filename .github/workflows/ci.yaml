@@ -1,0 +1,49 @@
+name: ExposureStats CI
+
+on:
+  push:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+
+  build-backend:
+    name: Build ExposureStats
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v5
+      with:
+        python-version: 3.12
+
+    - name: Set up Python 3.12 environment
+      run: |
+        pip install uv
+        uv pip install -r requirements.txt --system
+
+    - name: Local install
+      run: |
+        uv pip install -e . --system
+
+    - name: Lint & format
+      run: |
+
+        set -o pipefail
+        uv pip install ruff --system
+        ruff check src
+        ruff format src --check
+
+    - name: Test
+      run: |
+        uv pip install pytest pytest-cov
+
+        set -o pipefail
+
+        pytest tests -s --durations 10 -vv --cov  

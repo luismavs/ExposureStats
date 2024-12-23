@@ -1,36 +1,38 @@
 from pathlib import Path
 
-import yaml
+from dotenv import load_dotenv
 
 from exposurestats.config import Config
 from exposurestats.data_source import DataSource
 
+load_dotenv()
+test_cfg = Config.from_env()
+test_cfg.DEFAULT_PATH = "tests/data"
+test_cfg.delete_dangling_sidecars = False
+
 
 def test_build_library():
-    cfg = Config.from_yaml("./config.yaml")
-
-    ds = DataSource(cfg)
+    ds = DataSource(test_cfg)
     ds.build_exposure_library()
 
     assert True
 
 
 def test_read_one_sidecar():
-    cfg = Config.from_yaml("./config.yaml")
+    file_path = Path(".") / "tests" / "data" / "P9220262dxoap.jpg.exposurex7"
 
-    print(cfg)
-
-    #    file_path = Path('/Users/luis/Pictures/Lisboa 2020-/2021/07/31 - Dornes/Exposure Software/Exposure X6/P8011007.JPG.exposurex6')
-
-    with open("./config.yaml", "rt") as f:
-        cfg_ = yaml.safe_load(f)
-
-    file_path = Path(cfg_["test_image"])
-
-    ds = DataSource(cfg)
-    ds.read_one_sidecar(file_path)
-
-    assert True
+    ds = DataSource(test_cfg)
+    out = ds.read_one_sidecar(file_path)
+    assert out == {
+        "CreateDate": "2021-09-22T15:08:33",
+        "FocalLength": "12/1",
+        "FNumber": "28/5",
+        "Camera": "E-M5MarkIII",
+        "Lens": "OLYMPUS M.12-45mm F4.0",
+        "Flag": "0",
+        "Keywords": ["irina"],
+        "name": "P9220262dxoap.jpg",
+    }
 
 
 if __name__ == "__main__":
