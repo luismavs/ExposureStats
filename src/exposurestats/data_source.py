@@ -137,7 +137,7 @@ class DataSource:
         """Read properties from a sidecar .exposureXX file as a python dict"""
 
         if isinstance(file_path, str):
-            return self.read_one_sidecar(Path(file_path))
+            file_path = self.read_one_sidecar(Path(file_path))
 
         with open(file_path, "rb") as f:
             d1 = xmltodict.parse(f)

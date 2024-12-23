@@ -11,9 +11,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-def test_build_library():
+def _test_build_library():
+    """Running this test may delete orphaned sidecars!"""
     cfg = Config.from_env()
-
     ds = DataSource(cfg)
     ds.build_exposure_library()
 
@@ -21,8 +21,8 @@ def test_build_library():
 
 
 def test_read_one_sidecar():
+    """Reading an orphaned sidecar, so it may be autodeleted!"""
     cfg = Config.from_env()
-
     load_dotenv()
     file_path = Path(".") / "tests" / "data" / "P9220262dxoap.jpg.exposurex7"
 
