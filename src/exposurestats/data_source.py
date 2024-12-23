@@ -66,13 +66,15 @@ class DataSource:
         sidecars = []
         files_list = []
         for dirpath, dirnames, filenames in os.walk(Path(self.cfg.DEFAULT_PATH)):
-            print(dirpath.split("/")[-1].lower())
+            logger.info(f'Analysing dir:{dirpath.split("/")[-1].lower()}')
+            avoid = False
             for dir_ in self.cfg.DIRS_TO_AVOID:
                 if dir_ in dirpath.split("/"):
-                    logger.warning(f"skipping dir to avoid detected {dir_}")
-                else:
-                    files = [Path(dirpath) / f for f in filenames if self._file_has_extension(f, self.cfg.FILE_TYPE)]
-                    files_list.extend(files)
+                    logger.warning(f"Skipping directory to avoid: {dir_}")
+                    avoid = True
+            if avoid is False:
+                files = [Path(dirpath) / f for f in filenames if self._file_has_extension(f, self.cfg.FILE_TYPE)]
+                files_list.extend(files)
 
         self._deal_with_duplicates(files_list)
 
@@ -264,6 +266,7 @@ class DataSource:
                 files_["image_exists"] = files_["image_path"].apply(lambda x: os.path.isfile(x))
 
                 for phantom_sidecar in files_.loc[files_["image_exists"] == False, "full"].tolist():
+                    breakpoint()
                     try:
                         logger.warning(f"removing sidecar {phantom_sidecar} without associated image file")
                         os.remove(phantom_sidecar)

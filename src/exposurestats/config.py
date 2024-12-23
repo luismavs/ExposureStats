@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from typing import Union
 import yaml
 from pathlib import Path
 from dotenv import load_dotenv
@@ -14,7 +13,7 @@ class Config:
     DEFAULT_PATH: str
 
     current_version: str = "exposurex7"
-    # if True, issues a breakpoint when there appears to be duplicate image files
+    # if True, issues a breakpoint if duplicate image files are suspected
     run_for_duplicates: bool = True
 
     FIELDS_TO_READ: dict = field(
@@ -62,9 +61,8 @@ class Config:
     # FILTERS = {'remove__rejected' = {'alienexposure:pickflag' : 2}}
     DROP_FILTERS: dict[str, list] = field(default_factory=lambda: {"Flag": [2]})
 
-    # ------------------------------------------------------
     # operational
-
+    # delete sidecars if the associated image is not found
     delete_dangling_sidecars: bool = True
 
     def __post_init__(self):
@@ -78,7 +76,7 @@ class Config:
         return str_
 
     @classmethod
-    def from_yaml(cls, path_to_yaml: Union[Path, str]):
+    def from_yaml(cls, path_to_yaml: Path | str):
         with open(path_to_yaml, "r") as f:
             cfg = yaml.safe_load(f)
 
