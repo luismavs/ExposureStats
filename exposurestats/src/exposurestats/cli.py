@@ -11,7 +11,7 @@ app = Typer()
 @app.command(name="keywords")
 def get_keywords():
     """Save keywords table as csv"""
-    ds = DataSource(Config.get_config("config.yaml"))
+    ds = DataSource(Config.from_yaml("config.yaml"))
 
     _, _, _, keywords = ds.build_exposure_library()
     df_kws = keywords.loc[

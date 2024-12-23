@@ -11,15 +11,15 @@ import sys
 
 # @st.cache
 @st.cache_data
-def build_exposure_library_with_cache(_cfg: Config) -> tuple[pd.DataFrame, list, list, pd.DataFrame]:
-
+def build_exposure_library_with_cache(
+    _cfg: Config,
+) -> tuple[pd.DataFrame, list, list, pd.DataFrame]:
     ds = DataSource(_cfg)
 
     return ds.build_exposure_library()
 
 
 def draw_count_by_lens(df: pd.DataFrame):
-
     df_ = pd.DataFrame(df.groupby("Lens")["name"].count())
     df_ = df_.reset_index()
 
@@ -28,7 +28,11 @@ def draw_count_by_lens(df: pd.DataFrame):
         .mark_bar()
         .encode(
             y="Lens",
-            x=alt.X("name", title="Count", scale=alt.Scale(zero=True, domain=[0, df_["name"].max() * 1.05])),
+            x=alt.X(
+                "name",
+                title="Count",
+                scale=alt.Scale(zero=True, domain=[0, df_["name"].max() * 1.05]),
+            ),
             color=alt.Color("name", legend=None),
         )
     )
@@ -45,7 +49,6 @@ def draw_count_by_lens(df: pd.DataFrame):
 
 
 def draw_count_by_keyword(df: pd.DataFrame):
-
     df_ = pd.DataFrame(df.groupby("Keywords")["name"].count())
     df_ = df_.reset_index()
     df_ = df_.sort_values("Keywords", ascending=True)
@@ -55,7 +58,11 @@ def draw_count_by_keyword(df: pd.DataFrame):
         .mark_bar()
         .encode(
             y=alt.Y("Keywords", sort="-x"),
-            x=alt.X("name", title="Count", scale=alt.Scale(zero=True, domain=[0, df_["name"].max() * 1.05])),
+            x=alt.X(
+                "name",
+                title="Count",
+                scale=alt.Scale(zero=True, domain=[0, df_["name"].max() * 1.05]),
+            ),
             color=alt.Color("name", legend=None),
         )
     )
@@ -72,7 +79,6 @@ def draw_count_by_keyword(df: pd.DataFrame):
 
 
 def draw_count_by_focal_length(df: pd.DataFrame):
-
     df_ = pd.DataFrame(df.groupby("FocalLength")["name"].count())
     df_ = df_.reset_index()
 
@@ -82,7 +88,10 @@ def draw_count_by_focal_length(df: pd.DataFrame):
         .encode(
             x=alt.X(
                 "FocalLength",
-                scale=alt.Scale(zero=False, domain=[df["FocalLength"].min(), df["FocalLength"].max()]),
+                scale=alt.Scale(
+                    zero=False,
+                    domain=[df["FocalLength"].min(), df["FocalLength"].max()],
+                ),
                 title="Focal Length (mm)",
                 # tooltip=
             ),
@@ -98,7 +107,6 @@ def draw_count_by_focal_length(df: pd.DataFrame):
 
 
 def draw_count_by_date(df: pd.DataFrame):
-
     df_ = pd.DataFrame(df.groupby("Date")["name"].count()).reset_index()
 
     chart = (
@@ -120,10 +128,9 @@ def draw_count_by_date(df: pd.DataFrame):
 
 
 def main():
-
     st.title("Exposure Stats")
 
-    cfg = Config.get_config("config.yaml")
+    cfg = Config.from_env("config.yaml")
 
     logger.info(f"path to get stats: {cfg.DEFAULT_PATH}")
 
@@ -136,11 +143,15 @@ def main():
     d1 = st.sidebar.date_input("Start Date", datetime.date(2020, 1, 1))
     d2 = st.sidebar.date_input("End Date", datetime.datetime.today())
 
-    selected_cameras = st.sidebar.multiselect("Select the Camera", options=cameras, default=cameras)
+    selected_cameras = st.sidebar.multiselect(
+        "Select the Camera", options=cameras, default=cameras
+    )
 
     all_lenses = st.sidebar.checkbox("All lenses")
 
-    lenses_ = st.sidebar.multiselect("Select the Lens", options=lenses, default=lenses[1])
+    lenses_ = st.sidebar.multiselect(
+        "Select the Lens", options=lenses, default=lenses[1]
+    )
     if all_lenses:
         selected_lenses = lenses
     else:
@@ -179,7 +190,6 @@ def main():
 
 
 if __name__ == "__main__":
-
     logger.remove()
     logger.add(sys.stderr, level="SUCCESS")
     main()

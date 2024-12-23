@@ -5,8 +5,7 @@ import yaml
 
 
 def test_build_library():
-
-    cfg = Config.get_config("./config.yaml")
+    cfg = Config.from_yaml("./config.yaml")
 
     ds = DataSource(cfg)
     ds.build_exposure_library()
@@ -15,8 +14,7 @@ def test_build_library():
 
 
 def test_read_one_sidecar():
-
-    cfg = Config.get_config("./config.yaml")
+    cfg = Config.from_yaml("./config.yaml")
 
     print(cfg)
 
@@ -34,7 +32,6 @@ def test_read_one_sidecar():
 
 
 if __name__ == "__main__":
-
     test_read_one_sidecar()
 
     test_build_library()
