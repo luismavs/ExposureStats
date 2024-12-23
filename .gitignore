@@ -1,4 +1,4 @@
-
+*.bkp
 data/
 .vscode/
 config.yaml

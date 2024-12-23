@@ -2,13 +2,25 @@
 requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
+<<<<<<< HEAD:exposurestats/pyproject.toml
+# [tool.setuptools.packages.find]
+# where = ["."]
+# include = ["exposurestats"]
+# namespaces = false
+
+=======
+>>>>>>> main:pyproject.toml
 [project]
 name = "exposurestats"
 version = "1.3.0"
 description = "Exposure Stats"
 authors = [{ name = "Luís Seabra", email = "luismvseabra@gmail.com" }]
 requires-python = ">=3.12"
+<<<<<<< HEAD:exposurestats/pyproject.toml
+#dependencies = ["streamlit"]
+=======
 dependencies = ["streamlit"]
+>>>>>>> main:pyproject.toml
 classifiers = ["Programming Language :: Python :: 3.12"]
 #-------------------
 
