@@ -23,12 +23,8 @@ def test_build_library():
 def test_read_one_sidecar():
     cfg = Config.from_env()
 
-    print(cfg)
-
-    #    file_path = Path('/Users/luis/Pictures/Lisboa 2020-/2021/07/31 - Dornes/Exposure Software/Exposure X6/P8011007.JPG.exposurex6')
-
     load_dotenv()
-    file_path = Path(os.getenv("test_image"))
+    file_path = Path(".") / "tests" / "data" / "P9220262dxoap.jpg.exposurex7"
 
     ds = DataSource(cfg)
     ds.read_one_sidecar(file_path)
