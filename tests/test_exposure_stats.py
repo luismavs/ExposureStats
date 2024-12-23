@@ -1,7 +1,9 @@
 from pathlib import Path
-from exposurestats.data_source import DataSource
-from exposurestats.config import Config
+
 import yaml
+
+from exposurestats.config import Config
+from exposurestats.data_source import DataSource
 
 
 def test_build_library():
@@ -26,7 +28,7 @@ def test_read_one_sidecar():
     file_path = Path(cfg_["test_image"])
 
     ds = DataSource(cfg)
-    ds._read_one_sidecar(file_path)
+    ds.read_one_sidecar(file_path)
 
     assert True
 

@@ -1,12 +1,13 @@
-from pathlib import Path
-from tqdm import tqdm
 import os
-from typing import Tuple, List
+from pathlib import Path
 from time import time
+
 import pandas as pd
 import xmltodict
-from exposurestats.config import Config
 from loguru import logger
+from tqdm import tqdm
+
+from exposurestats.config import Config
 
 
 class DataSource:
@@ -70,11 +71,7 @@ class DataSource:
                 if dir_ in dirpath.split("/"):
                     logger.warning(f"skipping dir to avoid detected {dir_}")
                 else:
-                    files = [
-                        Path(dirpath) / f
-                        for f in filenames
-                        if self._file_has_extension(f, self.cfg.FILE_TYPE)
-                    ]
+                    files = [Path(dirpath) / f for f in filenames if self._file_has_extension(f, self.cfg.FILE_TYPE)]
                     files_list.extend(files)
 
         self._deal_with_duplicates(files_list)
@@ -89,9 +86,7 @@ class DataSource:
         df.info()
 
         # detecting bad dates by coercing to Nat
-        df["CreateDate"] = pd.to_datetime(
-            df["CreateDate"], utc=True, dayfirst=True, format="ISO8601", errors="coerce"
-        )
+        df["CreateDate"] = pd.to_datetime(df["CreateDate"], utc=True, dayfirst=True, format="ISO8601", errors="coerce")
         bad_dates = df.loc[df["CreateDate"].isna(), :]
 
         if len(bad_dates) > 0:
@@ -105,13 +100,9 @@ class DataSource:
         df["FocalLength"] = df["FocalLength"].round(0).astype(int)
         # df['FocalLength'] = df['FocalLength'].astype(str) + 'mm'
         df["FNumber"] = df["FNumber"].str.replace("/1", "").apply(eval)
-        df.loc[df["FNumber"] > 90, "FNumber"] = (
-            df.loc[df["FNumber"] > 90, "FNumber"] / 100.0
-        )
+        df.loc[df["FNumber"] > 90, "FNumber"] = df.loc[df["FNumber"] > 90, "FNumber"] / 100.0
         # probably for manual lens
-        df.loc[df["FNumber"] > 90, "FNumber"] = (
-            df.loc[df["FNumber"] > 90, "FNumber"] / 100.0
-        )
+        df.loc[df["FNumber"] > 90, "FNumber"] = df.loc[df["FNumber"] > 90, "FNumber"] / 100.0
 
         df["Flag"] = df["Flag"].astype(int)
 
@@ -160,9 +151,7 @@ class DataSource:
 
         return d3
 
-    def _image_exception_handler(
-        self, sidecar: dict, file_path: Path, missing_key: str
-    ) -> dict:
+    def _image_exception_handler(self, sidecar: dict, file_path: Path, missing_key: str) -> dict:
         """handle execptions when reading image data
 
         Args:
@@ -191,18 +180,14 @@ class DataSource:
         if "CreateDate" in str(missing_key):
             description = sidecar["x:xmpmeta"]["rdf:RDF"]["rdf:Description"]
             try:
-                d3 = self._extract_data_from_sidecar(
-                    self.cfg.fields_to_read_alternative, description, file_path
-                )
+                d3 = self._extract_data_from_sidecar(self.cfg.fields_to_read_alternative, description, file_path)
                 return d3
             except KeyError as e:
                 logger.warning(f"Missing key: {e}")
                 pass
 
             try:
-                d3 = self._extract_data_from_sidecar(
-                    self.cfg.fields_to_read_alternative_2, description, file_path
-                )
+                d3 = self._extract_data_from_sidecar(self.cfg.fields_to_read_alternative_2, description, file_path)
                 return d3
             except KeyError as e:
                 logger.warning(f"Missing key: {e}")
@@ -237,19 +222,12 @@ class DataSource:
         files = pd.DataFrame(
             {
                 "full": list_,
-                "name": [
-                    f.name.removesuffix("exposurex6").removesuffix("exposurex7")
-                    for f in list_
-                ],
+                "name": [f.name.removesuffix("exposurex6").removesuffix("exposurex7") for f in list_],
                 "suffix": [f.suffix for f in list_],
             }
         )
-        files_group = pd.DataFrame(files.groupby("name").size()).rename(
-            columns={0: "Count"}
-        )
-        duplicated_sidecars = files_group.loc[
-            files_group["Count"] > 1, :
-        ].index.to_list()
+        files_group = pd.DataFrame(files.groupby("name").size()).rename(columns={0: "Count"})
+        duplicated_sidecars = files_group.loc[files_group["Count"] > 1, :].index.to_list()
         files = files.merge(files_group, left_on="name", right_index=True)
         dupes = files.loc[files["Count"] > 1, :]
 
@@ -261,14 +239,11 @@ class DataSource:
 
         for dupe in dupe_versions[0:10]:
             paths_to_delete = files.loc[
-                (files["name"] == dupe)
-                & (~files["suffix"].str.contains(self.cfg.current_version, case=False)),
+                (files["name"] == dupe) & (~files["suffix"].str.contains(self.cfg.current_version, case=False)),
                 "full",
             ].tolist()
             for path in paths_to_delete:
-                logger.warning(
-                    f"Removing duplicated sidecar from a previous exposure version: {path}"
-                )
+                logger.warning(f"Removing duplicated sidecar from a previous exposure version: {path}")
                 os.remove(path)
 
         if len(dupe_versions) > 0:
@@ -283,24 +258,14 @@ class DataSource:
                     .astype(str)
                     .str.removesuffix("." + self.cfg.current_version)
                 ).rename("image_path")
-                image_files = image_files.apply(
-                    lambda x: Path(x).parents[2] / Path(x).name
-                )
+                image_files = image_files.apply(lambda x: Path(x).parents[2] / Path(x).name)
 
-                files_ = files.loc[files["name"] == dupe_, :].merge(
-                    image_files, left_index=True, right_index=True
-                )
-                files_["image_exists"] = files_["image_path"].apply(
-                    lambda x: os.path.isfile(x)
-                )
+                files_ = files.loc[files["name"] == dupe_, :].merge(image_files, left_index=True, right_index=True)
+                files_["image_exists"] = files_["image_path"].apply(lambda x: os.path.isfile(x))
 
-                for phantom_sidecar in files_.loc[
-                    files_["image_exists"] == False, "full"
-                ].tolist():
+                for phantom_sidecar in files_.loc[files_["image_exists"] == False, "full"].tolist():
                     try:
-                        logger.warning(
-                            f"removing sidecar {phantom_sidecar} without associated image file"
-                        )
+                        logger.warning(f"removing sidecar {phantom_sidecar} without associated image file")
                         os.remove(phantom_sidecar)
                     except FileNotFoundError:
                         logger.warning("file not found, moving on.")
@@ -327,7 +292,7 @@ class DataSource:
         try:
             bag_: list[str] = d_.get("rdf:Bag", {}).get("rdf:li", [])
         except AttributeError:
-            logger.trace(f"attribute error")
+            logger.trace("attribute error")
             return default_out
 
         if isinstance(bag_, str):

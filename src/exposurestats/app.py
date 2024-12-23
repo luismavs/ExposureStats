@@ -1,12 +1,13 @@
 import datetime
-import streamlit as st
+import sys
+
 import altair as alt
 import pandas as pd
+import streamlit as st
+from loguru import logger
 
 from exposurestats.config import Config
 from exposurestats.data_source import DataSource
-from loguru import logger
-import sys
 
 
 # @st.cache
@@ -143,15 +144,11 @@ def main():
     d1 = st.sidebar.date_input("Start Date", datetime.date(2020, 1, 1))
     d2 = st.sidebar.date_input("End Date", datetime.datetime.today())
 
-    selected_cameras = st.sidebar.multiselect(
-        "Select the Camera", options=cameras, default=cameras
-    )
+    selected_cameras = st.sidebar.multiselect("Select the Camera", options=cameras, default=cameras)
 
     all_lenses = st.sidebar.checkbox("All lenses")
 
-    lenses_ = st.sidebar.multiselect(
-        "Select the Lens", options=lenses, default=lenses[1]
-    )
+    lenses_ = st.sidebar.multiselect("Select the Lens", options=lenses, default=lenses[1])
     if all_lenses:
         selected_lenses = lenses
     else:

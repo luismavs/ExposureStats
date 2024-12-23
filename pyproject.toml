@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "exposurestats"
 version = "1.3.0"
 description = "Exposure Stats"
-authors = [{ name = "Luís Seabra", email = "luismvseabra@sgmail.com" }]
+authors = [{ name = "Luís Seabra", email = "luismvseabra@gmail.com" }]
 requires-python = ">=3.12"
 dependencies = ["streamlit"]
 classifiers = ["Programming Language :: Python :: 3.12"]
