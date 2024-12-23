@@ -7,8 +7,9 @@ Should work both with X6 and X7 versions.
 
 Recommended python version is python3.12
 
-    uv pip install -r exposurestats/requirements.txt
-    uv pip install -e exposurestats
+    sh install_tools.sh
+    uv pip install -r requirements.txt
+    uv pip install -e .
 
 To install requirements for notebooks
     
@@ -24,7 +25,7 @@ To install requirements for notebooks
 ![plot](./data/screenshot.png)
 
 ## Configuration
-Environment variable **DEFAULT_PATH** pointing the Exposure library path.
+Environment variable **DEFAULT_PATH** pointing the Exposure library path. See template.env.
 
 
 ## Tests
