@@ -56,9 +56,7 @@ class Config:
     FIELDS_TO_PROCESS: dict = field(default_factory=lambda: {"Lens": "strip"})
 
     FILE_TYPE: list[str] = field(default_factory=lambda: ["exposurex6", "exposurex7"])
-    PATH_IN_XML: list[str] = field(
-        default_factory=lambda: ["x:xmpmeta", "rdf:RDF", "rdf:Description"]
-    )
+    PATH_IN_XML: list[str] = field(default_factory=lambda: ["x:xmpmeta", "rdf:RDF", "rdf:Description"])
     DIRS_TO_AVOID: list[str] = field(default_factory=lambda: ["recycling", "incoming"])
 
     # FILTERS = {'remove__rejected' = {'alienexposure:pickflag' : 2}}
@@ -89,7 +87,7 @@ class Config:
         return Config(**cfg)
 
     @classmethod
-    def from_env(cls, path_to_yaml: Union[Path, str]):
+    def from_env(cls):
         """Read configuration from environment and dot-env files.
         TODO: generalise this
         """

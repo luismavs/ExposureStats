@@ -4,10 +4,15 @@ import yaml
 
 from exposurestats.config import Config
 from exposurestats.data_source import DataSource
+import os
+from dotenv import load_dotenv
+
+
+load_dotenv()
 
 
 def test_build_library():
-    cfg = Config.from_yaml("./config.yaml")
+    cfg = Config.from_env()
 
     ds = DataSource(cfg)
     ds.build_exposure_library()
@@ -16,16 +21,14 @@ def test_build_library():
 
 
 def test_read_one_sidecar():
-    cfg = Config.from_yaml("./config.yaml")
+    cfg = Config.from_env()
 
     print(cfg)
 
     #    file_path = Path('/Users/luis/Pictures/Lisboa 2020-/2021/07/31 - Dornes/Exposure Software/Exposure X6/P8011007.JPG.exposurex6')
 
-    with open("./config.yaml", "rt") as f:
-        cfg_ = yaml.safe_load(f)
-
-    file_path = Path(cfg_["test_image"])
+    load_dotenv()
+    file_path = Path(os.getenv("test_image"))
 
     ds = DataSource(cfg)
     ds.read_one_sidecar(file_path)
