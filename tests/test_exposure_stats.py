@@ -1,12 +1,13 @@
 from pathlib import Path
-from exposurestats.data_source import DataSource
-from exposurestats.config import Config
+
 import yaml
+
+from exposurestats.config import Config
+from exposurestats.data_source import DataSource
 
 
 def test_build_library():
-
-    cfg = Config.get_config("./config.yaml")
+    cfg = Config.from_yaml("./config.yaml")
 
     ds = DataSource(cfg)
     ds.build_exposure_library()
@@ -15,8 +16,7 @@ def test_build_library():
 
 
 def test_read_one_sidecar():
-
-    cfg = Config.get_config("./config.yaml")
+    cfg = Config.from_yaml("./config.yaml")
 
     print(cfg)
 
@@ -28,13 +28,12 @@ def test_read_one_sidecar():
     file_path = Path(cfg_["test_image"])
 
     ds = DataSource(cfg)
-    ds._read_one_sidecar(file_path)
+    ds.read_one_sidecar(file_path)
 
     assert True
 
 
 if __name__ == "__main__":
-
     test_read_one_sidecar()
 
     test_build_library()

@@ -14,3 +14,4 @@ typer
 mistune>=2.0.3
 notebook>=6.4.12
 loguru
+python-dotenv

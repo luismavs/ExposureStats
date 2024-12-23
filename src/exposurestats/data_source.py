@@ -1,19 +1,19 @@
-from pathlib import Path
-from tqdm import tqdm
 import os
-from typing import Tuple, List
+from pathlib import Path
 from time import time
+
 import pandas as pd
 import xmltodict
-from exposurestats.config import Config
 from loguru import logger
+from tqdm import tqdm
+
+from exposurestats.config import Config
 
 
 class DataSource:
     """Interact with Exposure Data"""
 
     def __init__(self, cfg: Config):
-
         # data
         self.cfg = cfg
         self.exlib = pd.DataFrame
@@ -25,7 +25,9 @@ class DataSource:
         # more internal configs
         self.recognised_versions = ["exposurex6", "exposurex7"]
 
-    def build_exposure_library(self) -> tuple[pd.DataFrame, list[str], list[str], pd.DataFrame]:
+    def build_exposure_library(
+        self,
+    ) -> tuple[pd.DataFrame, list[str], list[str], pd.DataFrame]:
         """Get exposure library together with auxilliary information
 
             Use the return methods to feed streamlit
@@ -199,7 +201,6 @@ class DataSource:
         return {}
 
     def _extract_data_from_sidecar(self, parser: dict, sidecar: dict, file_path: Path):
-
         d3 = {k: sidecar[v] for k, v in parser.items()}
 
         for k, v in self.cfg.FIELDS_TO_PROCESS.items():
@@ -217,7 +218,6 @@ class DataSource:
         return d3
 
     def _deal_with_duplicates(self, list_: list[Path]):
-
         # identify duplicated sidecars...
         files = pd.DataFrame(
             {
@@ -239,7 +239,8 @@ class DataSource:
 
         for dupe in dupe_versions[0:10]:
             paths_to_delete = files.loc[
-                (files["name"] == dupe) & (~files["suffix"].str.contains(self.cfg.current_version, case=False)), "full"
+                (files["name"] == dupe) & (~files["suffix"].str.contains(self.cfg.current_version, case=False)),
+                "full",
             ].tolist()
             for path in paths_to_delete:
                 logger.warning(f"Removing duplicated sidecar from a previous exposure version: {path}")
@@ -291,7 +292,7 @@ class DataSource:
         try:
             bag_: list[str] = d_.get("rdf:Bag", {}).get("rdf:li", [])
         except AttributeError:
-            logger.trace(f"attribute error")
+            logger.trace("attribute error")
             return default_out
 
         if isinstance(bag_, str):
@@ -308,18 +309,16 @@ class DataSource:
         return keywords
 
     def _file_has_extension(self, file: str, file_type_list: list) -> bool:
-
         return any([file.endswith(ft) for ft in file_type_list])
 
     @classmethod
     def from_yaml(cls, path=str):
-        cfg = Config.get_config(path)
+        cfg = Config.from_yaml(path)
         return cls(cfg)
 
 
 if __name__ == "__main__":
-
-    ds = DataSource(cfg=Config.get_config("config.yaml"))
+    ds = DataSource(cfg=Config.from_yaml("config.yaml"))
 
     main_df, cameras, lenses, keywords = ds.build_exposure_library()
     main_df.to_csv("data/data.csv")
