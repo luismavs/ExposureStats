@@ -319,7 +319,7 @@ class DataSource:
                 files_ = files.loc[files["name"] == dupe_, :].merge(image_files, left_index=True, right_index=True)
                 files_["image_exists"] = files_["image_path"].apply(lambda x: os.path.isfile(x))
 
-                for phantom_sidecar in files_.loc[files_["image_exists"] == False, "full"].tolist():
+                for phantom_sidecar in files_.loc[files_["image_exists"] == False, "full"].tolist():  # noqa
                     breakpoint()
                     try:
                         logger.warning(f"removing sidecar {phantom_sidecar} without associated image file")
