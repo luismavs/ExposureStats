@@ -12,9 +12,7 @@ from exposurestats.data_source import DataSource
 
 # @st.cache
 @st.cache_data
-def build_exposure_library_with_cache(
-    _cfg: Config,
-) -> tuple[pd.DataFrame, list, list, pd.DataFrame]:
+def build_exposure_library_with_cache(_cfg: Config) -> tuple[pd.DataFrame, list, list, pd.DataFrame]:
     ds = DataSource(_cfg)
 
     return ds.build_exposure_library()
