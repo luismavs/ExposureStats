@@ -1,2 +1,2 @@
 pip install uv
-pip install jupyter jupytext seaborn
+uv pip install ruff pytest 

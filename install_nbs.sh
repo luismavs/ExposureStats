@@ -1,0 +1,1 @@
+uv pip install jupyter jupytext seaborn tqdm

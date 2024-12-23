@@ -35,7 +35,7 @@ sys.path.append("/Users/luis/code/ExposureStats/exposurestats")
 from config import get_config
 from exposurestats.data_source import DataSource
 
-cfg = Config.get_config("../config.yaml")
+cfg = Config.from_yaml("../config.yaml")
 cfg
 
 # %% [markdown]

@@ -1,9 +1,11 @@
-from typer import Typer
-from exposurestats.data_source import DataSource
-from exposurestats.config import Config
-import pandas as pd
-from pathlib import Path
 from datetime import date
+from pathlib import Path
+
+import pandas as pd
+from typer import Typer
+
+from exposurestats.config import Config
+from exposurestats.data_source import DataSource
 
 app = Typer()
 
@@ -11,7 +13,7 @@ app = Typer()
 @app.command(name="keywords")
 def get_keywords():
     """Save keywords table as csv"""
-    ds = DataSource(Config.get_config("config.yaml"))
+    ds = DataSource(Config.from_yaml("config.yaml"))
 
     _, _, _, keywords = ds.build_exposure_library()
     df_kws = keywords.loc[
