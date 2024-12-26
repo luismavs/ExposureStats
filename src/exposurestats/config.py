@@ -1,3 +1,4 @@
+import datetime
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -66,6 +67,8 @@ class Config:
     # operational
     # delete sidecars if the associated image is not found
     delete_dangling_sidecars: bool = True
+
+    DEFAULT_START_DATE: datetime.date = datetime.date(2020, 1, 1)
 
     def __post_init__(self):
         self.DEFAULT_PATH = Path(self.DEFAULT_PATH)
