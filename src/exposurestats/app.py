@@ -127,7 +127,7 @@ def draw_count_by_date(df: pd.DataFrame):
 def main():
     st.title("Exposure Stats")
 
-    cfg = Config.from_env("config.yaml")
+    cfg = Config.from_env()
 
     logger.info(f"path to get stats: {cfg.DEFAULT_PATH}")
 
@@ -137,12 +137,12 @@ def main():
 
     df, cameras, lenses, keywords = build_exposure_library_with_cache(cfg)
 
-    d1 = st.sidebar.date_input("Start Date", datetime.date(2020, 1, 1))
+    d1 = st.sidebar.date_input("Start Date", cfg.DEFAULT_START_DATE)
     d2 = st.sidebar.date_input("End Date", datetime.datetime.today())
 
     selected_cameras = st.sidebar.multiselect("Select the Camera", options=cameras, default=cameras)
 
-    all_lenses = st.sidebar.checkbox("All lenses")
+    all_lenses = st.sidebar.checkbox("All Lenses")
 
     lenses_ = st.sidebar.multiselect("Select the Lens", options=lenses, default=lenses[1])
     if all_lenses:
