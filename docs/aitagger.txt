@@ -1,0 +1,22 @@
+title AI Tagger
+
+participant Input
+participant Pipeline
+participant Data System
+participant File System
+participant LLMTagger
+participant OpenAI
+
+Input -> Pipeline: image name
+Pipeline -> Data System: get possible tags
+Pipeline -> File System: get image file
+Pipeline -> Pipeline: convert image file
+Pipeline -> File System: save converted in cache
+Pipeline -> LLMTagger: call with image and tags
+LLMTagger -> OpenAI: prompt
+LLMTagger -> Pipeline : return
+Pipeline -> Data System: insert result
+Pipeline -> File System: modify sidecar
+
+
+
