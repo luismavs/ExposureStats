@@ -1,0 +1,13 @@
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: docker/dockerfile
+    image: exposurestats
+    container_name: exposurestats
+    ports:
+      - "8080:8080"
+    volumes:
+      - ..:/app
+    environment:
+      - DEFAULT_PATH=${DEFAULT_PATH:?Please set DEFAULT_PATH}

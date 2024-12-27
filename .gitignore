@@ -1,6 +1,7 @@
 *.bkp
 data/
 .vscode/
+.idea/
 config.yaml
 workspace.code-workspace
 *.ipynb

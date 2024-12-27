@@ -1,0 +1,41 @@
+# Version control
+.git
+.gitignore
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+*.egg-info/
+dist/
+build/
+
+# Environment files
+.env
+template.env
+venv/
+.venv/
+
+# Development files
+.vscode/
+*.ipynb
+.ipynb_checkpoints/
+notebook/
+tests/
+docs/
+
+# Data
+data/
+*.bkp
+*.drawio
+*.excalidraw
+
+# Docker files
+docker/
+Dockerfile
+.dockerignore
