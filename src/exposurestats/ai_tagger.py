@@ -1,12 +1,14 @@
+import os
 from dataclasses import dataclass
 from pathlib import Path
-from openai import Client
-from dotenv import load_dotenv
-import os
 from typing import Literal
-from exposurestats.image import image_to_base64
+
+from dotenv import load_dotenv
 from loguru import logger
+from openai import Client
 from pydantic import BaseModel
+
+from exposurestats.image import image_to_base64
 
 
 class LLMResponse(BaseModel):

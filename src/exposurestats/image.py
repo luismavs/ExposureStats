@@ -1,8 +1,8 @@
 import base64
 from io import BytesIO
+from pathlib import Path
 
 from PIL import Image
-from pathlib import Path
 
 
 def encode_image(image_path: str) -> bytes:
