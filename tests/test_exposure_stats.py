@@ -1,11 +1,7 @@
 from pathlib import Path
 
-from dotenv import load_dotenv
-
-import exposurestats
 from exposurestats.config import Config
 from exposurestats.data_source import DataSource
-
 
 # load_dotenv()
 # test_cfg = Config.from_env()
