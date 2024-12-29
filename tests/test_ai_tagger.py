@@ -8,7 +8,6 @@ from exposurestats.ai_tagger import (
     AITaggerConfig,
     AITaggerPipeline,
     LLMResponse,
-    get_system_prompt,
 )
 
 
@@ -33,11 +32,12 @@ class MockLLMTagger:
             """
         }
 
-    def tag_image(self, image: bytes, detail: Literal["high", "low", "auto"] = "low") -> str:
+    def tag_image(self, image: bytes, tags: list[str], detail: Literal["high", "low", "auto"] = "low") -> str:
         """Mock implementation of tag_image that returns a predefined response.
 
         Args:
             image: Base64 encoded image data
+            tags: List of allowed tags to use
             detail: Level of detail for image analysis
 
         Returns:
@@ -45,11 +45,14 @@ class MockLLMTagger:
         """
         return self.mock_response["content"]
 
-    def tag_image_structured_output(self, image: bytes, detail: Literal["high", "low", "auto"] = "low") -> LLMResponse:
+    def tag_image_structured_output(
+        self, image: bytes, tags: list[str], detail: Literal["high", "low", "auto"] = "low"
+    ) -> LLMResponse:
         """Mock implementation that returns a structured response.
 
         Args:
             image: Base64 encoded image data
+            tags: List of allowed tags to use
             detail: Level of detail for image analysis
 
         Returns:
@@ -60,17 +63,6 @@ class MockLLMTagger:
             tags=["landscape", "mountain", "night"],
             additional_tags=["scenic", "nature"],
         )
-
-
-def test_get_system_prompt():
-    """Test system prompt generation with sample labels"""
-    labels = ["landscape", "mountain", "night"]
-    prompt = get_system_prompt(labels)
-
-    assert "landscape" in prompt
-    assert "mountain" in prompt
-    assert "night" in prompt
-    assert "Keywords should be concise" in prompt
 
 
 class TestAITaggerConfig:
@@ -89,60 +81,6 @@ class TestAITaggerConfig:
             base_dir=path, system_prompt="test prompt", tags=["tag1", "tag2"], openai_key="test_key"
         )
         assert config.base_dir == path
-
-
-# class TestLLMTagger:
-#     @pytest.fixture
-#     def llm_tagger(self):
-#         """Create a basic LLMTagger instance"""
-#         tagger = LLMTagger(api_key="test_key", model="test_model", system_prompt="test prompt")
-#         tagger.client = Mock()
-#         return tagger
-
-#     def test_init(self, llm_tagger):
-#         """Test LLMTagger initialization"""
-#         assert llm_tagger.model == "test_model"
-#         assert llm_tagger.system_prompt == "test prompt"
-
-#     @patch("openai.Client")
-#     def test_tag_image(self, mock_client, llm_tagger):
-#         """Test basic image tagging"""
-#         # Mock the OpenAI response
-#         mock_response = ChatCompletion(
-#             id="test_id",
-#             model="test_model",
-#             choices=[
-#                 Choice(
-#                     finish_reason="stop",
-#                     index=0,
-#                     message=ChatCompletionMessage(content="Test response", role="assistant"),
-#                 )
-#             ],
-#             created=1234567890,
-#             object="chat.completion",
-#         )
-
-#         mock_client.return_value.chat.completions.create.return_value = mock_response
-
-#         result = llm_tagger.tag_image(image=b"test_image_bytes")
-#         assert result == "Test response"
-
-#     @patch("openai.Client")
-#     def test_tag_image_structured_output(self, mock_client, llm_tagger):
-#         """Test structured output image tagging"""
-#         mock_response = Mock()
-#         mock_response.choices = [Mock()]
-#         mock_response.choices[0].message.parsed = LLMResponse(
-#             explanation="Test explanation", tags=["tag1", "tag2"], additional_tags=["extra1"]
-#         )
-
-#         mock_client.return_value.beta.chat.completions.parse.return_value = mock_response
-
-#         result = llm_tagger.tag_image_structured_output(image=b"test_image_bytes")
-#         assert isinstance(result, LLMResponse)
-#         assert result.tags == ["tag1", "tag2"]
-#         assert result.explanation == "Test explanation"
-#         assert result.additional_tags == ["extra1"]
 
 
 class TestAITaggerPipeline:
@@ -171,4 +109,6 @@ class TestAITaggerPipeline:
         # Verify the results
         assert result == ["landscape", "night"]
         mock_to_base64.assert_called_once()
-        pipeline.llm.tag_image_structured_output.assert_called_once_with(image="base64_image_data")
+        pipeline.llm.tag_image_structured_output.assert_called_once_with(
+            image="base64_image_data", tags=pipeline.config.tags
+        )
