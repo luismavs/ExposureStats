@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import polars as pl
 import pytest
 
 from exposurestats.db import Database
@@ -176,3 +177,15 @@ def test_foreign_key_relationships(db):
     # Clean up test data
     db.conn.execute("DELETE FROM Keywords WHERE id = 999")
     db.conn.execute("DELETE FROM KeywordTypes WHERE id = 999")
+
+
+def test_create_db():
+    data = pl.read_parquet("tests/testdata/sample_ImageData.parquet")
+
+    with Database("data/database.db") as conn:
+        conn.create_tables(drop=True)
+        conn.insert_image_data(data=data)
+
+
+if __name__ == "__main__":
+    test_create_db()

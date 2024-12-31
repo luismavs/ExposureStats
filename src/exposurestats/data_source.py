@@ -41,7 +41,7 @@ class DataSource:
             Use the self attributes when doing interactive analysis
 
         Returns:
-            main_data dataframe, cameras list, lenses list, keywords dataframe
+            main_data dataframe, cameras list, lenses list, keywords pandas dataframe
         """
 
         t1 = time()
