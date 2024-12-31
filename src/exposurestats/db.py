@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 import duckdb
 import numpy as np
@@ -17,6 +18,8 @@ class Database:
     def __init__(self, db_path: str):
         self.db_path = db_path
         self.conn = duckdb.connect(db_path)
+
+        self._sequences = ["category", "image", "keyword", "tagging"]
 
     def __enter__(self):
         return self
@@ -48,25 +51,41 @@ class Database:
             )
         """)
 
+        self._add_incremental_id("image")
+
+    def _add_incremental_id(self, name):
+        self.conn.execute(f"""
+                          CREATE SEQUENCE seq_{name}id START 1;
+                        """)
+
     def _create_keywords_table(self):
         """Create the Keywords table with foreign key to KeywordTypes"""
         self.conn.execute("""
             CREATE TABLE IF NOT EXISTS Keywords (
                 id INTEGER PRIMARY KEY,
                 keyword VARCHAR NOT NULL,
-                type_id INTEGER NOT NULL,
                 ai_tag BOOLEAN NOT NULL,
-                category VARCHAR NOT NULL,
-                FOREIGN KEY (type_id) REFERENCES KeywordTypes(id)
             )
         """)
 
-    def _create_keyword_types_table(self):
-        """Create the KeywordTypes table"""
+        self._add_incremental_id("keyword")
+
+    def _create_keyword_categories_tables(self):
+        """Create the KeywordCategories table"""
         self.conn.execute("""
-            CREATE TABLE IF NOT EXISTS KeywordTypes (
+            CREATE TABLE IF NOT EXISTS Categories (
                 id INTEGER PRIMARY KEY,
                 name VARCHAR NOT NULL
+            )
+        """)
+
+        self._add_incremental_id("category")
+
+        self.conn.execute("""
+            CREATE TABLE IF NOT EXISTS KeywordCategories (
+                keyword_id INTEGER PRIMARY KEY,
+                category_id INTEGER NOT NULL,
+                FOREIGN KEY (category_id) REFERENCES Categories(id)                              
             )
         """)
 
@@ -82,6 +101,8 @@ class Database:
             )
         """)
 
+        self._add_incremental_id("tagging")
+
     def _create_ai_tagged_images_table(self):
         """Create the AITaggedImages table with foreign keys"""
         self.conn.execute("""
@@ -95,7 +116,7 @@ class Database:
             )
         """)
 
-    def create_tables(self, drop: bool = False):
+    def create_tables(self, drop: bool = False, default: bool = True):
         """Create all necessary tables in the database.
 
         Args:
@@ -105,11 +126,13 @@ class Database:
         if drop:
             self.drop_tables()
         # Create tables in order of dependencies
-        self._create_keyword_types_table()  # First, as Keywords depends on it
+        self._create_keyword_categories_tables()  # First, as Keywords depends on it
         self._create_image_data_table()
-        self._create_keywords_table()  # After KeywordTypes
+        self._create_keywords_table()  # After KeywordCategories
         self._create_manual_tagged_images_table()
         self._create_ai_tagged_images_table()
+        if default:
+            self.default_tables()
 
     def drop_tables(self):
         """Drop all tables from the database in the correct order to handle foreign key dependencies"""
@@ -118,15 +141,46 @@ class Database:
         self.conn.execute("DROP TABLE IF EXISTS ManualTaggedImages")
         self.conn.execute("DROP TABLE IF EXISTS Keywords")
         self.conn.execute("DROP TABLE IF EXISTS ImageData")
-        self.conn.execute("DROP TABLE IF EXISTS KeywordTypes")
+        self.conn.execute("DROP TABLE IF EXISTS KeywordCategories")
+        self.conn.execute("DROP TABLE IF EXISTS Categories")
+
+        for seq in self._sequences:
+            self.conn.execute(f"DROP SEQUENCE IF EXISTS seq_{seq}id")
+
+    def default_tables(self):
+        """Insert default values
+
+        Default Categories are:
+            - unset
+            - description
+            - object
+            - private
+        """
+
+        self.conn.executemany(
+            """
+            INSERT OR IGNORE INTO Categories (id, name)
+            VALUES (nextval('seq_categoryid'), ?)
+            """,
+            [
+                ("unset",),
+                ("description",),
+                ("object",),
+                ("private",),
+            ],
+        )
+        self.conn.commit()
 
     def insert_image_data(self, data: pl.DataFrame):
         """Insert image data from a polars DataFrame into the database.
 
+
+        NOTE: DOES NOT APPEND
+
         Args:
             data: Polars DataFrame containing image metadata and keywords
         """
-        # Insert into ImageData table
+        # Insert into ImageData table with autoincrement
         image_data = data.select(
             ["name", "CreateDate", "FocalLength", "FNumber", "Camera", "Lens", "Flag", "CropFactor", "Date"]
         )
@@ -137,17 +191,12 @@ class Database:
         self.conn.executemany(
             """
             INSERT INTO ImageData (
-                name, create_date, focal_length, f_number,
+                id, name, create_date, focal_length, f_number,
                 camera, lens, flag, crop_factor, date
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (nextval('seq_imageid'), ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
             imd.tolist(),
         )
-
-        breakpoint()
-
-        # Get image IDs for the inserted records
-        image_ids = {row[0]: row[1] for row in self.conn.execute("SELECT name, id FROM ImageData").fetchall()}
 
         # Process keywords
         keywords_set = set()
@@ -157,36 +206,42 @@ class Database:
         # Insert keywords
         self.conn.executemany(
             """
-            INSERT OR IGNORE INTO Keywords (keyword, type_id, ai_tag, category)
-            VALUES (?, 1, false, 'manual')
+            INSERT OR IGNORE INTO Keywords (id, keyword, ai_tag)
+            VALUES (nextval('seq_keywordid'), ?, false)
         """,
             [(k,) for k in keywords_set],
         )
 
-        # Get keyword IDs
-        keyword_ids = {row[0]: row[1] for row in self.conn.execute("SELECT keyword, id FROM Keywords").fetchall()}
-
         # Build ManualTaggedImages records
-        logger.warning("bad code")
-        breakpoint("what is an image_id object below? this way we will be able t build that that row correctly")
-        tagged_images = []
-        for row in data.iter_rows(named=True):
-            image_id = image_ids[row["name"]]
-            for keyword in row["Keywords"]:
-                keyword_id = keyword_ids[keyword]
-                tagged_images.append((keyword_id, image_id))
+        df_kws = self.read_table("Keywords").select(["id", "keyword"])
+        df_imgs = self.read_table("ImageData").select(["id", "name"])
+        manual_tags = (
+            data.select(["Keywords", "name"])
+            .explode("Keywords")
+            .rename({"Keywords": "keyword"})
+            .join(df_imgs, how="inner", on="name")
+            .rename({"id": "image_id"})
+            .drop("name")
+            .drop_nulls()
+            .join(df_kws, how="inner", on="keyword")
+            .rename({"id": "keyword_id"})
+            .drop(["keyword"])["keyword_id", "image_id"]
+        )
 
         # Insert ManualTaggedImages records
         self.conn.executemany(
             """
-            INSERT INTO ManualTaggedImages (keyword_id, image_id)
-            VALUES (?, ?)
+            INSERT INTO ManualTaggedImages (id, keyword_id, image_id)
+            VALUES (nextval('seq_taggingid'),?, ?)
         """,
-            tagged_images,
+            manual_tags.to_numpy().tolist(),
         )
 
         self.conn.commit()
         logger.success(f"Data for {len(data)} images inserted")
+
+    def read_table(self, table: Literal["ImageData", "Images", "Keywords", "KeywordCategories", "Categories"]):
+        return self.conn.execute(f"select * from {table}").pl()
 
 
 def reset_db():
@@ -199,4 +254,3 @@ if __name__ == "__main__":
 
     with Database("data/database.db") as db:
         db.insert_image_data(pl.read_parquet("data/data.parquet"))
-        breakpoint()
