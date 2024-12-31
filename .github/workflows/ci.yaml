@@ -51,4 +51,4 @@ jobs:
 
         set -o pipefail
 
-        pytest tests -s --durations 10 -vv --cov  
+        pytest tests -s -vv --cov=src 
