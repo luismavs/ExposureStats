@@ -1,7 +1,12 @@
 # ExposureStats
 
-Streamlit App to display Exposure Image Editor Photo Stats.
-Should work both with X6 and X7 versions.
+Display Stats about an Exposure Image Editor Photo Library.
+
+Count by camera, lens, date, ...
+
+Tag images with AI - experimental version.
+
+Working with both X6 and X7 versions.
 
 ## To install
 
@@ -13,16 +18,12 @@ uv pip install -r requirements.txt
 uv pip install -e .
 ```
 
-To install requirements for notebooks
-
-```bash
-# this is probably outdated
-sh install_nbs.sh
-```
 
 ## To Run
 
-    streamlit run exposurestats/src/exposurestats/app.py
+    streamlit run src/exposurestats/app.py
+
+Or use Docker.
 
 ## Screenshot
 
@@ -30,7 +31,7 @@ sh install_nbs.sh
 
 ## Configuration
 
-Environment variable **DEFAULT_PATH** pointing the Exposure library path. See template.env.
+Environment variable **DEFAULT_PATH** pointing to the Exposure library path. See template.env.
 
 ## Docker Deployment
 
@@ -44,6 +45,9 @@ Tests need an env var **test_image** set to a test file.
 
 Notebook folder has an older version, jupyter + seaborn based.
 
-## To Do
+To install requirements for notebooks
 
-- Package/Deploy as a container?
+```bash
+# this is probably outdated
+sh install_nbs.sh
+```
