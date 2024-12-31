@@ -9,7 +9,7 @@ from loguru import logger
 from openai import Client
 from pydantic import BaseModel
 
-from exposurestats.image import image_to_base64
+from exposurestats.image_processing import image_to_base64
 
 
 class LLMResponse(BaseModel):

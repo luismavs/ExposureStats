@@ -4,7 +4,7 @@ from io import BytesIO
 import pytest
 from PIL import Image
 
-from exposurestats.image import (
+from exposurestats.image_processing import (
     encode_image,
     image_to_base64,
     open_image,
