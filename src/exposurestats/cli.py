@@ -25,11 +25,6 @@ def get_keywords():
     df_.write_csv(Path("data") / ("keywords-" + str(date.today()) + ".csv"))
 
 
-@app.command()
-def dummy():
-    pass
-
-
 @app.command(name="build-db")
 def build_db():
     """ "Build EXPS db from EXP files"""
@@ -39,8 +34,6 @@ def build_db():
     with Database("data/database.db") as conn:
         conn.create_tables(drop=True)
         conn.insert_image_data(data=image_data)
-
-    breakpoint()
 
 
 if __name__ == "__main__":
