@@ -1,18 +1,17 @@
-#jupyter
-#jupytext
-#seaborn
-pandas #~=1.4
+
 xmltodict
 tqdm
-streamlit #~=1.5
-altair #~=4.2
+streamlit
+altair
 pyyaml>=6.0.1
 watchdog
 typer
 
-#pip-audit
 mistune>=2.0.3
 notebook>=6.4.12
 loguru
 python-dotenv
 openai
+
+polars
+duckdb
