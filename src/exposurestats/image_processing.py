@@ -2,7 +2,32 @@ import base64
 from io import BytesIO
 from pathlib import Path
 
+import rawpy
+from loguru import logger
 from PIL import Image
+
+RAWPI_EXTENSIONS = {
+    # Sony
+    ".arw",
+    ".sr2",
+    # Canon
+    ".cr2",
+    ".cr3",
+    # Nikon
+    ".nef",
+    # Generic/Adobe
+    ".dng",
+    # Fujifilm
+    ".raf",
+    # Olympus
+    ".orf",
+    # Panasonic
+    ".rw2",
+    # Pentax
+    ".pef",
+    # Olympus ORI file is a standard ORF file of the first standard resolution image taken in the sequence used to create the HR shot.
+    ".ori",
+}
 
 
 def encode_image(image_path: str) -> bytes:
@@ -10,8 +35,32 @@ def encode_image(image_path: str) -> bytes:
         return base64.b64encode(image_file.read()).decode("utf-8")
 
 
+def open_raw_image(image_path: Path | str) -> bytes:
+    """Opens a RAW image file and extracts its embedded JPEG preview.
+
+    If the RAW image does not have a JPEG thumb, it will be processed to extract the embedded JPEG preview. NOTE: Is this working?
+
+    Args:
+        image_path: Path to the RAW image file
+
+    Returns:
+        Embedded JPEG preview as bytes
+    """
+    with rawpy.imread(str(image_path)) as raw:
+        thumb = raw.extract_thumb()
+        if thumb.format == rawpy.ThumbFormat.JPEG:
+            return thumb.data
+        # If no JPEG thumb available, process the RAW image
+        logger.warning(f"No JPEG thumb available for {image_path}. Processing RAW image.")
+        rgb = raw.postprocess()
+        img = Image.fromarray(rgb)
+        buffer = BytesIO()
+        img.save(buffer, format="JPEG")
+        return buffer.getvalue()
+
+
 def open_image(image_path: Path | str) -> bytes:
-    """Opens an image file and returns its bytes.
+    """Opens an image file and returns its bytes. Supports both JPEG/PNG and RAW formats.
 
     Args:
         image_path: Path to the image file
@@ -19,6 +68,11 @@ def open_image(image_path: Path | str) -> bytes:
     Returns:
         Image file contents as bytes
     """
+    image_path = Path(image_path)
+
+    if image_path.suffix.lower() in RAWPI_EXTENSIONS:
+        return open_raw_image(image_path)
+
     with open(image_path, "rb") as f:
         return f.read()
 
@@ -27,9 +81,9 @@ def resize_image(image: bytes, target_size: tuple[int, int] = (512, 512), preser
     """Resizes an image to the target size while maintaining aspect ratio.
 
     Args:
-        image: Image bytes to resize
+        image: Image in bytes to resize
         target_size: Desired output dimensions (width, height)
-        preserve_ratio:
+        preserve_ratio: Whether to preserve the aspect ratio
 
     Returns:
         Resized image as bytes
