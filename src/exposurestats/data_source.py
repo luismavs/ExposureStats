@@ -24,6 +24,16 @@ class DataSource:
         self.cfg = cfg
         # the library as a dataframe
         self.exlib: pd.DataFrame
+        # - name: Image filename
+        # - CreateDate: Creation timestamp in nanoseconds since epoch
+        # - FocalLength: Focal length in mm
+        # - FNumber: F-number value
+        # - Camera: Camera model name
+        # - Lens: Lens model name
+        # - Flag: Image flag
+        # - CropFactor: Sensor crop factor
+        # - Date: Image date
+        # - Keywords: List of keywords/tags associated with the image
 
         # monitoring
         self.dangling_sidecars = 0
@@ -41,7 +51,10 @@ class DataSource:
             Use the self attributes when doing interactive analysis
 
         Returns:
-            main_data dataframe, cameras list, lenses list, keywords dataframe
+            - main_data pandas dataframe (see self.exlib for schema)
+            - cameras list
+            - lenses list
+            - keywords pandas dataframe
         """
 
         t1 = time()
