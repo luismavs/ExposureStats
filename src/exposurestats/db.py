@@ -8,7 +8,10 @@ from loguru import logger
 
 
 class DatabaseManager:
-    """Handles table and schema management in the DB"""
+    """Handles table and schema management in the D
+
+    Call create_all(drop=True) to run a database migration
+    """
 
     def __init__(self, conn: duckdb.DuckDBPyConnection):
         """
@@ -161,10 +164,10 @@ class DataInserter:
         - name: Image filename
         - CreateDate: Creation timestamp in nanoseconds since epoch
         - FocalLength: Focal length in mm
-        - FNumber: F-number/aperture value
+        - FNumber: F-number value
         - Camera: Camera model name
         - Lens: Lens model name
-        - Flag: Image flag/rating
+        - Flag: Image flag
         - CropFactor: Sensor crop factor
         - Date: Image date
         - Keywords: List of keywords/tags associated with the image
@@ -304,10 +307,10 @@ class Database:
         - name: Image filename
         - CreateDate: Creation timestamp in nanoseconds since epoch
         - FocalLength: Focal length in mm
-        - FNumber: F-number/aperture value
+        - FNumber: F-number value
         - Camera: Camera model name
         - Lens: Lens model name
-        - Flag: Image flag/rating
+        - Flag: Image flag
         - CropFactor: Sensor crop factor
         - Date: Image date
         - Keywords: List of keywords/tags associated with the image
@@ -330,7 +333,7 @@ class Database:
 
 
 def reset_db():
-    """Reset the database to its initial state"""
+    """Reset the database to an empty state"""
     with Database("data/database.db") as db:
         db.create_tables(drop=True)
 

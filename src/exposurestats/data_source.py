@@ -27,10 +27,10 @@ class DataSource:
         # - name: Image filename
         # - CreateDate: Creation timestamp in nanoseconds since epoch
         # - FocalLength: Focal length in mm
-        # - FNumber: F-number/aperture value
+        # - FNumber: F-number value
         # - Camera: Camera model name
         # - Lens: Lens model name
-        # - Flag: Image flag/rating
+        # - Flag: Image flag
         # - CropFactor: Sensor crop factor
         # - Date: Image date
         # - Keywords: List of keywords/tags associated with the image
