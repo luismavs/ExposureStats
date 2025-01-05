@@ -7,10 +7,16 @@ import polars as pl
 from loguru import logger
 
 
-class TableManager:
-    """Handles table creation and schema management"""
+class DatabaseManager:
+    """Handles table and schema management in the DB"""
 
     def __init__(self, conn: duckdb.DuckDBPyConnection):
+        """
+        Handles database connection and table/schema management
+
+        Args:
+            conn: DuckDB database connection
+        """
         self.conn = conn
         self._sequences = ["category", "image", "keyword", "tagging"]
 
@@ -151,7 +157,7 @@ class DataInserter:
     def insert_image_data(self, data: pl.DataFrame):
         """Insert image data from a polars DataFrame
 
-        The image data DataFrame should contain the following columns:
+        The image data DataFrame (a row per image) should contain the following columns:
         - name: Image filename
         - CreateDate: Creation timestamp in nanoseconds since epoch
         - FocalLength: Focal length in mm
@@ -222,6 +228,7 @@ class DataInserter:
         df_kws = self.conn.execute("select id, keyword from Keywords").pl()
         df_imgs = self.conn.execute("select id, name from ImageData").pl()
 
+        # getting a keyword_id, image_id correspondance table
         manual_tags = (
             data.select(["Keywords", "name"])
             .explode("Keywords")
@@ -232,7 +239,8 @@ class DataInserter:
             .drop_nulls()
             .join(df_kws, how="inner", on="keyword")
             .rename({"id": "keyword_id"})
-            .drop(["keyword"])["keyword_id", "image_id"]
+            .drop(["keyword"])
+            .select(["keyword_id", "image_id"])
         )
 
         self.conn.executemany(
@@ -245,17 +253,22 @@ class DataInserter:
 
 
 class Database:
-    """
-    Database manager class for handling DuckDB operations
+    """Interacts with the duckb database
 
-    Args:
-        db_path: Path to the database file
+    Can be used as a context manager
     """
 
     def __init__(self, db_path: str):
+        """
+
+        Args:
+            db_path: Path to the database file
+
+        """
+
         self.db_path = db_path
         self.conn = duckdb.connect(db_path)
-        self.tables = TableManager(self.conn)
+        self.manager = DatabaseManager(self.conn)
         self.inserter = DataInserter(self.conn)
 
     def __enter__(self):
@@ -277,11 +290,11 @@ class Database:
             drop: If True, drops existing tables before creating new ones.
             default: If True, creates default category values
         """
-        self.tables.create_all(drop=drop, default=default)
+        self.manager.create_all(drop=drop, default=default)
 
     def drop_tables(self):
         """Drop all tables from the database in the correct order to handle foreign key dependencies"""
-        self.tables.drop_all()
+        self.manager.drop_all()
 
     def insert_image_data(self, data: pl.DataFrame):
         """Insert image data from a polars DataFrame into the database.

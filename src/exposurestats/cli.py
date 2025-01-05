@@ -16,7 +16,8 @@ app = Typer()
 
 @app.command(name="keywords")
 def get_keywords():
-    """Save keywords table as csv"""
+    """Get keywords from Exposure image directory and write them to a CSV file"""
+
     ds = DataSource(Config.from_env())
 
     _, _, _, keywords = ds.build_exposure_library()
@@ -29,11 +30,11 @@ def get_keywords():
 def build_db():
     """ "Build EXPS db from EXP files"""
     ds = DataSource(Config.from_env())
-    image_data, _, _, keywords = ds.build_exposure_library()
+    image_data, _, _, _ = ds.build_exposure_library()
 
     with Database("data/database.db") as conn:
         conn.create_tables(drop=True)
-        conn.insert_image_data(data=image_data)
+        conn.insert_image_data(data=pl.from_pandas(image_data))
 
 
 if __name__ == "__main__":

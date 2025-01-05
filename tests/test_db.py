@@ -16,7 +16,7 @@ def temp_db_path(tmp_path):
 def db(temp_db_path):
     """Create a database instance"""
     database = Database(temp_db_path)
-    database.create_tables()
+    database.manager.create_all()
     yield database
     database.close()
 
@@ -47,9 +47,7 @@ def test_tables_exist(db):
     }
 
     result = db.conn.execute("""
-        SELECT table_name 
-        FROM information_schema.tables 
-        WHERE table_schema = 'main'
+        SELECT name FROM sqlite_master WHERE type='table'
     """).fetchall()
 
     actual_tables = {row[0] for row in result}
@@ -60,13 +58,11 @@ def test_table_schemas(db):
     """Test that tables have correct columns"""
     # Test ImageData columns
     image_data_cols = db.conn.execute("""
-        SELECT column_name, data_type, is_nullable
-        FROM information_schema.columns
-        WHERE table_name = 'ImageData'
+        DESCRIBE ImageData
     """).fetchall()
 
     assert any(col for col in image_data_cols if col[0] == "id" and col[1] == "INTEGER")
-    assert any(col for col in image_data_cols if col[0] == "name" and col[2] == "NO")
+    assert any(col for col in image_data_cols if col[0] == "name" and col[1] == "VARCHAR")
 
 
 def test_create_and_drop_tables(temp_db_path):
