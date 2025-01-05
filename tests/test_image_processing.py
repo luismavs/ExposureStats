@@ -99,3 +99,17 @@ def test_resize_image_different_ratios(sample_image_bytes):
     resized = resize_image(sample_image_bytes, (100, 200), preserve_ratio=True)
     img = Image.open(BytesIO(resized))
     assert img.size == (100, 200)
+
+
+def _test_open_raw_image(raw_file_path):
+    """Test opening image file."""
+    # Test with Path object
+    img_bytes = open_image(raw_file_path)
+    resized = resize_image(img_bytes, (256, 256), preserve_ratio=True)
+    assert isinstance(img_bytes, bytes)
+    assert isinstance(resized, bytes)
+
+
+if __name__ == "__main__":
+    _test_open_raw_image("data/images/P4240313.ORF")
+    _test_open_raw_image("data/images/PC260752.ORI")

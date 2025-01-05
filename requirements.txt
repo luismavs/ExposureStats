@@ -192,6 +192,7 @@ numpy==2.2.1
     # via
     #   pandas
     #   pydeck
+    #   rawpy
     #   streamlit
 openai==1.58.1
     # via -r requirements.in
@@ -269,6 +270,8 @@ pyzmq==26.2.0
     #   ipykernel
     #   jupyter-client
     #   jupyter-server
+rawpy==0.24.0
+    # via -r requirements.in
 referencing==0.35.1
     # via
     #   jsonschema
