@@ -3,6 +3,7 @@ from io import BytesIO
 from pathlib import Path
 
 import rawpy
+from loguru import logger
 from PIL import Image
 
 RAWPI_EXTENSIONS = {
@@ -37,6 +38,8 @@ def encode_image(image_path: str) -> bytes:
 def open_raw_image(image_path: Path | str) -> bytes:
     """Opens a RAW image file and extracts its embedded JPEG preview.
 
+    If the RAW image does not have a JPEG thumb, it will be processed to extract the embedded JPEG preview. NOTE: Is this working?
+
     Args:
         image_path: Path to the RAW image file
 
@@ -48,6 +51,7 @@ def open_raw_image(image_path: Path | str) -> bytes:
         if thumb.format == rawpy.ThumbFormat.JPEG:
             return thumb.data
         # If no JPEG thumb available, process the RAW image
+        logger.warning(f"No JPEG thumb available for {image_path}. Processing RAW image.")
         rgb = raw.postprocess()
         img = Image.fromarray(rgb)
         buffer = BytesIO()
