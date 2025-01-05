@@ -32,7 +32,7 @@ class MockLLMTagger:
             """
         }
 
-    def tag_image(self, image: bytes, tags: list[str], detail: Literal["high", "low", "auto"] = "low") -> str:
+    def tag(self, image: bytes, tags: list[str], detail: Literal["high", "low", "auto"] = "low") -> str:
         """Mock implementation of tag_image that returns a predefined response.
 
         Args:
@@ -94,7 +94,7 @@ class TestAITaggerPipeline:
         return AITaggerPipeline(config=config, llm=llm)
 
     @patch("exposurestats.ai_tagger.image_to_base64")
-    def test_tag_image(self, mock_to_base64, pipeline):
+    def test_tag(self, mock_to_base64, pipeline):
         """Test the complete pipeline tagging process"""
         # Mock the base64 conversion
         mock_to_base64.return_value = "base64_image_data"
@@ -104,7 +104,7 @@ class TestAITaggerPipeline:
             explanation="Test explanation", tags=["landscape", "night"], additional_tags=["sunset"]
         )
 
-        result = pipeline.tag_image("test_image.jpg")
+        result = pipeline.tag("test_image.jpg")
 
         # Verify the results
         assert result == ["landscape", "night"]

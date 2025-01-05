@@ -255,6 +255,62 @@ class DataInserter:
         )
 
 
+class DatabaseOperations:
+    """Handles common database operations"""
+
+    def __init__(self, conn: duckdb.DuckDBPyConnection):
+        self.conn = conn
+
+    def get_image_id_by_name(self, image_name: str) -> int:
+        """Get image ID from its filename
+
+        Args:
+            image_name: Name of the image file
+
+        Returns:
+            Image ID from the database
+        """
+        result = self.conn.execute("SELECT id FROM ImageData WHERE name = ?", [image_name]).fetchone()
+        if not result:
+            raise ValueError(f"Image {image_name} not found in database")
+        return result[0]
+
+    def get_ai_keywords(self, keywords: list[str]) -> list[tuple[int, str]]:
+        """Get IDs and strings for existing AI-tagged keywords.
+
+        Args:
+            keywords: List of keyword strings
+
+        Returns:
+            List of tuples containing (keyword_id, keyword_string) for existing AI-tagged keywords
+        """
+        result = self.conn.execute(
+            """
+            SELECT id, keyword FROM Keywords 
+            WHERE keyword = ANY(?) AND ai_tag = true
+            """,
+            [keywords],
+        ).fetchall()
+        return [(r[0], r[1]) for r in result]
+
+    def insert_ai_tags(self, image_id: int, keyword_ids: list[int], tagging_date: datetime) -> None:
+        """Insert AI-generated tags into AITaggedImages
+
+        Args:
+            image_id: ID of the image
+            keyword_ids: List of keyword IDs to associate
+            tagging_date: When the tagging was performed
+        """
+        self.conn.executemany(
+            """
+            INSERT INTO AITaggedImages (keyword_id, image_id, tagging_date)
+            VALUES (?, ?, ?)
+            """,
+            [(kw_id, image_id, tagging_date) for kw_id in keyword_ids],
+        )
+        self.conn.commit()
+
+
 class Database:
     """Interacts with the duckb database
 
@@ -273,6 +329,7 @@ class Database:
         self.conn = duckdb.connect(db_path)
         self.manager = DatabaseManager(self.conn)
         self.inserter = DataInserter(self.conn)
+        self.operations = DatabaseOperations(self.conn)
 
     def __enter__(self):
         return self
