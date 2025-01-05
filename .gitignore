@@ -3,7 +3,7 @@ data/
 .vscode/
 .idea/
 config.yaml
-workspace.code-workspace
+*.code-workspace
 *.ipynb
 .DS_Store
 
