@@ -73,7 +73,7 @@ class DataSource:
 
         t2 = time()
 
-        logger.info(f"It took {round(t2-t1)}s to get the data")
+        logger.info(f"It took {round(t2 - t1)}s to get the data")
 
         self.exlib = df
 
@@ -115,7 +115,7 @@ class DataSource:
         sidecars = []
         files_list = []
         for dirpath, dirnames, filenames in os.walk(Path(self.cfg.DEFAULT_PATH)):
-            logger.info(f'Analysing dir:{dirpath.split("/")[-1].lower()}')
+            logger.info(f"Analysing dir:{dirpath.split('/')[-1].lower()}")
             avoid = False
             for dir_ in self.cfg.DIRS_TO_AVOID:
                 if dir_ in dirpath.split("/"):

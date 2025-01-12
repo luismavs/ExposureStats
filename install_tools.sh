@@ -1,2 +1,2 @@
 #pip install uv
-uv pip install ruff pytest pytest-cov
+uv pip install ruff pytest pytest-cov --upgrade
