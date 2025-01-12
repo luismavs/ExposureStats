@@ -189,6 +189,9 @@ class AITaggerPipeline:
         Args:
             image_path: Path to the image file relative to base_dir
             db: Database instance to store the results
+
+        Raises:
+            ValueError: If image is not found in database
         """
         # Get image name from path
         image_name = Path(image_path).name
@@ -196,16 +199,20 @@ class AITaggerPipeline:
         # Get tags from image
         tags = self.tag(image_path)
 
-        # Get image ID
+        # Get image ID and handle missing image case
         image_id = db.operations.get_image_id_by_name(image_name)
+        if image_id is None:
+            raise ValueError(f"Image {image_name} not found in database")
 
-        # Get ai keywords in db
-        ai_keyword_ids, ai_keyword_strings = db.operations.get_ai_keywords(tags)
-        if not set(tags).issubset(set(ai_keyword_strings)):
-            logger.warning(f"Some tags are not in the database: {set(tags) - set(ai_keyword_strings)}")
+        # Get ai keywords in db - fix tuple unpacking
+        ai_keywords = db.operations.get_ai_keywords(tags)  # Returns list of (id, string) tuples
+        ai_keyword_dict = {kw_str: kw_id for kw_id, kw_str in ai_keywords}
 
-        # Get keyword IDs in same order as tags
-        keyword_ids = [kw_id for kw_id, kw_str in zip(ai_keyword_ids, ai_keyword_strings) if kw_str in tags]
+        if not set(tags).issubset(ai_keyword_dict.keys()):
+            logger.warning(f"Some tags are not in the database: {set(tags) - set(ai_keyword_dict.keys())}")
+
+        # Get keyword IDs for valid tags only
+        keyword_ids = [ai_keyword_dict[tag] for tag in tags if tag in ai_keyword_dict]
 
         # Store in database
         db.operations.insert_ai_tags(image_id=image_id, keyword_ids=keyword_ids, tagging_date=datetime.now())
