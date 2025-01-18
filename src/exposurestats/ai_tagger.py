@@ -1,5 +1,6 @@
 import os
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from string import Template
 from typing import Literal
@@ -9,6 +10,7 @@ from loguru import logger
 from openai import Client
 from pydantic import BaseModel
 
+from exposurestats.db import Database
 from exposurestats.image_processing import image_to_base64
 
 
@@ -66,7 +68,7 @@ class LLMTagger:
         self.model = model
         self.system_prompt = Template(system_prompt)
 
-    def tag_image(self, image: bytes, tags: list[str], detail: Literal["high", "low", "auto"] = "low") -> str:
+    def tag(self, image: bytes, tags: list[str], detail: Literal["high", "low", "auto"] = "low") -> str:
         """Tags an image using the OpenAI API.
         Args:
             image: Base64 encoded image data
@@ -107,7 +109,7 @@ class LLMTagger:
         self, image: bytes, tags: list[str], detail: Literal["high", "low", "auto"] = "low"
     ) -> LLMResponse:
         """Tags an image using the OpenAI API and returns structured output.
-        Similar to tag_image() but returns a structured response object instead of raw text.
+        Similar to tag() but returns a structured response object instead of raw text.
 
         Args:
             image: Base64 encoded image data
@@ -156,7 +158,15 @@ class AITaggerPipeline:
         self.config = config
         self.llm = llm
 
-    def tag_image(self, image_path: str):
+    @classmethod
+    def with_openAI(cls, config: AITaggerConfig):
+        """Create from a config file, tied to specific LLMTagger"""
+        return cls(
+            config=config,
+            llm=LLMTagger(api_key=config.openai_key, model=config.openai_model, system_prompt=config.system_prompt),
+        )
+
+    def tag(self, image_path: str):
         """Tag an image using the AI pipeline.
 
         Args:
@@ -173,13 +183,39 @@ class AITaggerPipeline:
 
         return out.tags
 
-    @classmethod
-    def with_openAI(cls, config: AITaggerConfig):
-        """Create from a config file, tied to specific LLMTagger"""
-        return cls(
-            config=config,
-            llm=LLMTagger(api_key=config.openai_key, model=config.openai_model, system_prompt=config.system_prompt),
-        )
+    def tag_and_store(self, image_path: str, db: Database):
+        """Tag an image using the AI pipeline and store results in database.
+
+        Args:
+            image_path: Path to the image file relative to base_dir
+            db: Database instance to store the results
+
+        Raises:
+            ValueError: If image is not found in database
+        """
+        # Get image name from path
+        image_name = Path(image_path).name
+
+        # Get tags from image
+        tags = self.tag(image_path)
+
+        # Get image ID and handle missing image case
+        image_id = db.operations.get_image_id_by_name(image_name)
+        if image_id is None:
+            raise ValueError(f"Image {image_name} not found in database")
+
+        # Get ai keywords in db - fix tuple unpacking
+        ai_keywords = db.operations.get_ai_keywords(tags)  # Returns list of (id, string) tuples
+        ai_keyword_dict = {kw_str: kw_id for kw_id, kw_str in ai_keywords}
+
+        if not set(tags).issubset(ai_keyword_dict.keys()):
+            logger.warning(f"Some tags are not in the database: {set(tags) - set(ai_keyword_dict.keys())}")
+
+        # Get keyword IDs for valid tags only
+        keyword_ids = [ai_keyword_dict[tag] for tag in tags if tag in ai_keyword_dict]
+
+        # Store in database
+        db.operations.insert_ai_tags(image_id=image_id, keyword_ids=keyword_ids, tagging_date=datetime.now())
 
 
 if __name__ == "__main__":
@@ -195,6 +231,6 @@ if __name__ == "__main__":
 
     pipe = AITaggerPipeline.with_openAI(cfg)
 
-    pipe.tag_image(image_path="P7270969dxo.jpg")
+    pipe.tag(image_path="P7270969dxo.jpg")
 
-    pipe.tag_image(image_path="P4240257.JPG")
+    pipe.tag(image_path="P4240257.JPG")
