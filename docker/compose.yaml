@@ -2,12 +2,13 @@ services:
   web:
     build:
       context: ..
-      dockerfile: docker/dockerfile
+      dockerfile: docker/Dockerfile
     image: exposurestats
     container_name: exposurestats
     ports:
-      - "8080:8080"
+      - "8001:8001"
     volumes:
       - ..:/app
+      - /app/.venv
     environment:
-      - DEFAULT_PATH=${DEFAULT_PATH:?Please set DEFAULT_PATH}
+      - DEFAULT_PATH=/app/data/images

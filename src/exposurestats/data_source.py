@@ -155,6 +155,11 @@ class DataSource:
         df = pd.DataFrame(sidecars)
         df.info()
 
+        # Handle empty DataFrame
+        if df.empty:
+            logger.warning("No sidecar files found - returning empty DataFrame")
+            return df
+
         # detect bad dates by coercing to Nat
         df["CreateDate"] = pd.to_datetime(df["CreateDate"], utc=True, dayfirst=True, format="ISO8601", errors="coerce")
         bad_dates = df.loc[df["CreateDate"].isna(), :]
@@ -303,7 +308,7 @@ class DataSource:
         logger.warning(f"{len(duplicated_sidecars)} duplicated sidecars detected")
 
         # delete sidecars from old Exposure versions
-        ds = dupes.groupby("name")["suffix"].nunique()
+        ds = dupes.groupby(dupes["name"])["suffix"].nunique()
         dupe_versions = ds[ds > 1].index.tolist()
 
         for dupe in dupe_versions[0:10]:

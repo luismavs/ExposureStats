@@ -1,3 +1,7 @@
+# ExposureToolsSuite
+
+2025-10-26 update: My goal with this project is to host a set of Python tools I use to manage my Exposure X7 library. Hope you find them useful. The project was born from my curiosity to show stats for lens usage in my personal library.
+
 # ExposureStats
 
 Display Stats about an Exposure Image Editor Photo Library.
@@ -10,20 +14,18 @@ Working with both X6 and X7 versions.
 
 ## To install
 
-Recommended python version is python3.12
+Recommended python version is 3.13
 
 ```bash
-sh install_tools.sh
-uv pip install -r requirements.txt
-uv pip install -e .
+# install uv
+uv sync --locked
 ```
-
 
 ## To Run
 
-    streamlit run src/exposurestats/app.py
+Execute `uv run streamlit run src/exposurestats/app.py`.
 
-Or use Docker.
+Or use Docker. At this stage, it is still probably best to use streamlit locally to simplify interaction with your local file system.
 
 ## Screenshot
 
@@ -40,6 +42,12 @@ For running ExposureStats in a Docker environment, please refer to the detailed 
 ## Tests
 
 Tests need an env var **test_image** set to a test file.
+
+## Development Tooling
+
+Install taskfile
+
+<https://taskfile.dev/docs/installation>
 
 ## Comments
 

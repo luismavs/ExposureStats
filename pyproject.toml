@@ -8,8 +8,32 @@ version = "1.7.0"
 description = "Exposure Stats"
 authors = [{ name = "Luís Seabra", email = "luismvseabra@gmail.com" }]
 requires-python = ">=3.12"
-dependencies = ["streamlit"]
+dependencies = [
+    "altair>=5.5.0",
+    "duckdb>=1.4.1",
+    "loguru>=0.7.3",
+    "mistune>=3.1.4",
+    "notebook>=7.4.7",
+    "openai>=2.6.1",
+    "polars>=1.34.0",
+    "python-dotenv>=1.1.1",
+    "pyyaml>=6.0.3",
+    "rawpy>=0.25.1",
+    "streamlit",
+    "tqdm>=4.67.1",
+    "typer>=0.20.0",
+    "watchdog>=6.0.0",
+    "xmltodict>=1.0.2",
+]
 classifiers = ["Programming Language :: Python :: 3.12"]
+
+[project.optional-dependencies]
+notebook = [
+    "jupyter>=1.1.1",
+    "jupytext>=1.18.1",
+    "seaborn>=0.13.2",
+    "tqdm>=4.67.1",
+]
 #-------------------
 
 [tool.ruff]
@@ -18,3 +42,6 @@ extend-exclude = ["scripts", "data"]
 [tool.ruff.lint]
 select = ["E4", "E7", "E9", "F", "I"]
 ignore = []
+
+[dependency-groups]
+dev = ["pytest>=8.4.2", "pytest-cov>=7.0.0", "ruff>=0.14.2"]

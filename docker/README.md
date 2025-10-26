@@ -27,9 +27,8 @@ export DEFAULT_PATH=/your/actual/path/to/library
 # 2.On Windows (PowerShell):
 $env:DEFAULT_PATH="/your/actual/path/to/library"
 
-# Build & run the docker image
-docker-compose -f docker/compose.yaml up --build
-
+# Build & run the docker image picking  up env file
+docker compose -f docker/compose.yaml --env-file .env up --build
 ```
 
 ## Environment Variables

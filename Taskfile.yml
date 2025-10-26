@@ -1,0 +1,42 @@
+version: '3'
+
+tasks:
+
+  run:
+    desc: Run local streamlit app
+    cmds:
+      - uv sync --locked
+      - uv run streamlit run src/exposurestats/app.py
+
+  run-docker:
+    desc: Build and run docker container
+    cmds:
+      - uv sync --locked
+      - docker compose -f docker/compose.yaml --env-file .env up --build
+
+  test:
+    desc: Run tests with coverage report
+    cmds:
+      - task install-dev
+      - uv run pytest tests/ -v --cov=src/exposurestats --cov-report=html --cov-report=term
+
+  lint:
+    desc: Run linting with ruff
+    cmds:
+      - uv run ruff check src/ tests/
+    sources:
+      - src/**/*.py
+      - tests/**/*.py
+
+  format:
+    desc: Format code with ruff
+    cmds:
+      - uv run ruff format src/ tests/
+    sources:
+      - src/**/*.py
+      - tests/**/*.py
+
+  install-dev:
+    desc: Install development dependencies
+    cmds:
+      - uv sync --group dev --locked --link-mode=copy

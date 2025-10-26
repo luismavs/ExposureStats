@@ -1,6 +1,15 @@
 # Version control
 .git
 .gitignore
+data/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+*.egg-info/
+dist/
+build/
 
 # Python artifacts
 __pycache__/
