@@ -14,19 +14,10 @@ tasks:
       - uv sync --locked
       - docker compose -f docker/compose.yaml --env-file .env up --build
 
-  test:
-    desc: Run tests with coverage report
+  run-ratings:
+    desc: Run ratings tool
     cmds:
-      - task install-dev
-      - uv run pytest tests/ -v --cov=src/exposurestats --cov-report=html --cov-report=term
-
-  lint:
-    desc: Run linting with ruff
-    cmds:
-      - uv run ruff check src/ tests/
-    sources:
-      - src/**/*.py
-      - tests/**/*.py
+      - Echo like so: "uv run ratings ..."
 
   format:
     desc: Format code with ruff
